@@ -1,9 +1,11 @@
-﻿Public Class HUI_TaskDocFormRegion
+﻿Imports System.Windows.Forms
+
+Public Class HUI_TaskDocFormRegion
 
 #Region "Form Region Factory"
 
-    <Microsoft.Office.Tools.Outlook.FormRegionMessageClass(Microsoft.Office.Tools.Outlook.FormRegionMessageClassAttribute.Note)> _
-    <Microsoft.Office.Tools.Outlook.FormRegionName("HUI_TaskDocVSTOAddin.HUI_TaskDocFormRegion")> _
+    <Microsoft.Office.Tools.Outlook.FormRegionMessageClass(Microsoft.Office.Tools.Outlook.FormRegionMessageClassAttribute.Note)>
+    <Microsoft.Office.Tools.Outlook.FormRegionName("HUI_TaskDocVSTOAddin.HUI_TaskDocFormRegion")>
     Partial Public Class HUI_TaskDocFormRegionFactory
 
         ' Occurs before the form region is initialized.
@@ -16,6 +18,9 @@
     End Class
 
 #End Region
+    Property LastTabPage As Integer
+    Property ShowAllPartners As Boolean
+    Property TaskTreeView As TreeView
 
     'Occurs before the form region is displayed. 
     'Use Me.OutlookItem to get a reference to the current Outlook item.
