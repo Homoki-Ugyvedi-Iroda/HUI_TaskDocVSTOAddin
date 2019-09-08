@@ -273,6 +273,7 @@
     <Compile Include="HUI_TaskDocFormRegion.vb">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="OutlookApplicationHelper.vb" />
     <Compile Include="ThisAddIn.vb">
       <SubType>Code</SubType>
     </Compile>
