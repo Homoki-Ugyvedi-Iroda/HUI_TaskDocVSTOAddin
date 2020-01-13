@@ -15,8 +15,8 @@ Public Class ThisAddIn
         Logstart()
         StartSp()
         SetAndVerifyTempPath()
+        TimerForRefresh.Interval = 20 * 60 * 1000
         TimerForRefresh.Start()
-        TimerForRefresh.Interval = TimeSpan.FromMinutes(20).Milliseconds
     End Sub
 
     Private Sub ThisAddIn_Shutdown() Handles Me.Shutdown
@@ -59,6 +59,7 @@ Public Class ThisAddIn
         'Matter értékek: Id, Value, Active
         'Person értékek: adott matterhöz tartozó personok = Id, Value, Active, Matter
         'Users értékek: Id, loginname
+        'Term értékek
         Await RefreshSpLookupValues()
         'Task!
     End Sub
