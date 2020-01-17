@@ -33,13 +33,8 @@ Public Class ThisAddIn
         Log.logger.Info(My.Application.Info.AssemblyName & " started")
     End Sub
     Private Sub StartSp()
-        Dim MySP As New SPHelper.SPHUI()
-        MySP.Connect(My.Settings.spUrl)
-        If MySP.Connected = True Then
-            Me.Connection = MySP
-        Else
-            Log.logger.Error("Nem érhető el a Sharepoint szerver, offline.")
-        End If
+        Me.Connection = New SPHelper.SPHUI()
+        LoadCachedValues()
         LoadSpLookupValues()
     End Sub
     Private Sub SetAndVerifyTempPath()
@@ -59,12 +54,17 @@ Public Class ThisAddIn
         'Matter értékek: Id, Value, Active
         'Person értékek: adott matterhöz tartozó personok = Id, Value, Active, Matter
         'Users értékek: Id, loginname
-        'Term értékek
+        'Term értékek?
+        'Task értékek?
         Await RefreshSpLookupValues()
-        'Task!
     End Sub
     Public Async Function RefreshSpLookupValues() As Task
         Dim m As New DataLayer()
+        Me.Connection.Connect(My.Settings.spUrl)
+        If Me.Connection.Connected = False Then
+            Globals.ThisAddIn.Log.logger.Info("No connection, no refresh")
+            Exit Function
+        End If
         Me.Connection.Users = Await m.GetAllUsers(Me.Connection)
         Me.Connection.Matters = Await m.GetAllMattersAsync(Me.Connection)
         Me.Connection.Persons = Await m.GetAllPersonsAsync(Me.Connection)
@@ -93,6 +93,9 @@ Public Class ThisAddIn
             End If
         Next
     End Function
+    Private Sub LoadCachedValues()
+
+    End Sub
 
 End Class
 
