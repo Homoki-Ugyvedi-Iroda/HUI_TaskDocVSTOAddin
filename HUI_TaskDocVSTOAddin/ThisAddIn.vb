@@ -23,6 +23,8 @@ Public Class ThisAddIn
 
     Public CTaskTypesPath = Path.Combine(CacheDirectory, "TaskTypes.json")
     Public CUsersPath = Path.Combine(CacheDirectory, "Users.json")
+    Public CKeywords = Path.Combine(CacheDirectory, "Keywords.json")
+
 
     Private Sub ThisAddIn_Startup() Handles Me.Startup
         Logstart()
@@ -83,7 +85,7 @@ Public Class ThisAddIn
         Me.Connection.Persons = Await m.GetAllPersonsAsync(Me.Connection)
         Me.Connection.Tasks = Await m.GetAllTasksAsync(Me.Connection)
         Me.Connection.AllTerms = Await m.GetAllTermsAsync(Me.Connection)
-        'Me.Connection.Keywords
+        Me.Connection.Keywords = Await m.GetAllKeywords(Me.Connection)
         Me.Connection.InternalDocTypes = m.GetAllInternalDocTypes(Me.Connection)
         Me.Connection.WorkDocumentType = Await m.GetAllWorkDocTypesAsync(Me.Connection)
         Await LoadChoiceColumns(m)
@@ -111,6 +113,8 @@ Public Class ThisAddIn
         If File.Exists(CWorkDocTypesPath) Then Me.Connection.WorkDocumentType = DeserializeWorkDocTypes(CWorkDocTypesPath)
         If File.Exists(CTermsPath) Then Me.Connection.AllTerms = DeserializeTerms(CTermsPath)
         If File.Exists(CInternalDocTypesPath) Then Me.Connection.InternalDocTypes = DeserializeTerms(CInternalDocTypesPath)
+        If File.Exists(CKeywords) Then Me.Connection.Keywords = DeserializeTerms(CUsersPath)
+        If File.Exists(CUsersPath) Then Me.Connection.Users = DeserializeUsers(CUsersPath)
         If File.Exists(CNonWorkDocTypesPath) Then Me.Connection.NonWorkDocTypes = DeserializeListofString(CNonWorkDocTypesPath)
         If File.Exists(CTaskTypesPath) Then Me.Connection.TaskTypes = DeserializeListofString(CTaskTypesPath)
         If File.Exists(CPrioritiesPath) Then Me.Connection.Priorities = DeserializeListofString(CPrioritiesPath)
@@ -125,6 +129,14 @@ Public Class ThisAddIn
             Globals.ThisAddIn.Log.logger.Info("Cache directory created at " & CacheDirectory)
         End If
         Dim success As Byte = 0
+        If Not IsNothing(Me.Connection.Keywords) AndAlso Me.Connection.Keywords.Count > 0 Then
+            Dim succeeded = HPHelper.Serialize.Serialize(CKeywords, Me.Connection.Keywords)
+            If succeeded Then success += 1
+        End If
+        If Not IsNothing(Me.Connection.Users) AndAlso Me.Connection.Users.Count > 0 Then
+            Dim succeeded = HPHelper.Serialize.Serialize(CUsersPath, Me.Connection.Users)
+            If succeeded Then success += 1
+        End If
         If Not IsNothing(Me.Connection.WorkDocumentType) AndAlso Me.Connection.WorkDocumentType.Count > 0 Then
             Dim succeeded = HPHelper.Serialize.Serialize(CWorkDocTypesPath, Me.Connection.WorkDocumentType)
             If succeeded Then success += 1
@@ -149,16 +161,16 @@ Public Class ThisAddIn
             Dim succeeded = HPHelper.Serialize.Serialize(CInternalDocTypesPath, Me.Connection.InternalDocTypes)
             If succeeded Then success += 1
         End If
-        If Not IsNothing(Me.Connection.Matters) AndAlso Me.Connection.Matters.Count > 0 Then
-            Dim succeeded = HPHelper.Serialize.Serialize(CMattersPath, Me.Connection.Matters)
+        If Not IsNothing(Me.Connection.Tasks) AndAlso Me.Connection.Tasks.Count > 0 Then
+            Dim succeeded = HPHelper.Serialize.Serialize(CTasksPath, Me.Connection.Tasks)
             If succeeded Then success += 1
         End If
         If Not IsNothing(Me.Connection.Persons) AndAlso Me.Connection.Persons.Count > 0 Then
             Dim succeeded = HPHelper.Serialize.Serialize(CPersonsPath, Me.Connection.Persons)
             If succeeded Then success += 1
         End If
-        If Not IsNothing(Me.Connection.Tasks) AndAlso Me.Connection.Tasks.Count > 0 Then
-            Dim succeeded = HPHelper.Serialize.Serialize(CTasksPath, Me.Connection.Tasks)
+        If Not IsNothing(Me.Connection.Matters) AndAlso Me.Connection.Matters.Count > 0 Then
+            Dim succeeded = HPHelper.Serialize.Serialize(CMattersPath, Me.Connection.Matters)
             If succeeded Then success += 1
         End If
         Globals.ThisAddIn.Log.logger.Info("Items serialized from memory to file (" & success & ")")

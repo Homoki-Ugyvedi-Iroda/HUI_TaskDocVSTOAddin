@@ -17,13 +17,13 @@ Public Class DataLayer
     Public Async Function GetAllTasksAsync(SphuiToUse As SPHelper.SPHUI) As Task(Of List(Of TaskClass))
         Return Await SphuiToUse.GetAllTasksForAddin(SphuiToUse.Context, SphuiToUse.Users, SphuiToUse.Matters, SphuiToUse.Persons)
     End Function
-    Public Async Function GetAllTermsAsync(SphuiToUse As SPHelper.SPHUI) As Task(Of List(Of Term))
+    Public Async Function GetAllTermsAsync(SphuiToUse As SPHelper.SPHUI) As Task(Of List(Of TermClass))
         Return Await SphuiToUse.GetAllTermsAsync(SphuiToUse.Context)
     End Function
-    'Public Async Function GetAllKeywords(SphuiToUse As SPHelper.SPHUI) As Task(Of List(Of Term))
-    '    Return Await SphuiToUse.GetAllTermsAsync(SphuiToUse.Context)
-    'End Function
-    Public Function GetAllInternalDocTypes(SphuiToUse As SPHelper.SPHUI) As List(Of Term)
+    Public Async Function GetAllKeywords(SphuiToUse As SPHelper.SPHUI) As Task(Of List(Of TermClass))
+        Return Await SphuiToUse.GetAllKeywordsAsyncSPHUI(SphuiToUse.Context)
+    End Function
+    Public Function GetAllInternalDocTypes(SphuiToUse As SPHelper.SPHUI) As List(Of TermClass)
         Return SphuiToUse.GetInternalDocTypes
     End Function
     Public Async Function GetAllWorkDocTypesAsync(SphuiToUse As SPHelper.SPHUI) As Task(Of List(Of WorkDocTypeClass))
