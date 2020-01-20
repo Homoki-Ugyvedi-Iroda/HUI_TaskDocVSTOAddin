@@ -10,6 +10,8 @@ Public Class ThisAddIn
     Public Const UnknownFolderName = "/_Unknown/"
     Public Log As HPHelper.DebugTesting
     Public WithEvents TimerForRefresh As New Timer
+    Public WithEvents TimerFirstSerialization As New Timer
+
     Public CacheDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Cached")
 
     Public CInternalDocTypesPath = Path.Combine(CacheDirectory, "InternalDocTypes.json")
@@ -24,6 +26,7 @@ Public Class ThisAddIn
     Public CTaskTypesPath = Path.Combine(CacheDirectory, "TaskTypes.json")
     Public CUsersPath = Path.Combine(CacheDirectory, "Users.json")
     Public CKeywords = Path.Combine(CacheDirectory, "Keywords.json")
+    Public IsThisFirstStart As Boolean = False
 
 
     Private Sub ThisAddIn_Startup() Handles Me.Startup
@@ -32,6 +35,8 @@ Public Class ThisAddIn
         SetAndVerifyTempPath()
         TimerForRefresh.Interval = 20 * 60 * 1000
         TimerForRefresh.Start()
+        TimerFirstSerialization.Interval = 3 * 60 * 1000
+        TimerFirstSerialization.Start()
     End Sub
 
     Private Sub ThisAddIn_Shutdown() Handles Me.Shutdown
@@ -63,6 +68,10 @@ Public Class ThisAddIn
     Private Sub TimerForRefresh_Tick(sender As Object, e As EventArgs) Handles TimerForRefresh.Tick
         RefreshSpLookupValues()
     End Sub
+    Private Sub TimerFirstSerialization_Tick(sender As Object, e As EventArgs) Handles TimerFirstSerialization.Tick
+        SerializeValues()
+        TimerFirstSerialization.Stop()
+    End Sub
 
     Public Async Sub LoadSpLookupValues()
         'deserialize-oltokat betölti, és beállítja az async-ot
@@ -90,7 +99,11 @@ Public Class ThisAddIn
         Me.Connection.WorkDocumentType = Await m.GetAllWorkDocTypesAsync(Me.Connection)
         Await LoadChoiceColumns(m)
         Globals.ThisAddIn.Log.logger.Info("RefreshSpLookupValues finished")
-        SerializeValues()
+        If IsThisFirstStart = True Then
+            SerializeValues()
+        Else
+            IsThisFirstStart = True
+        End If
     End Function
     Private Async Function LoadChoiceColumns(input As DataLayer) As Task
         Dim DictionaryToLoad As Dictionary(Of String, Microsoft.SharePoint.Client.FieldMultiChoice) = Await input.GetAllColumnChoiceTypesAsync(Me.Connection)
