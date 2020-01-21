@@ -9,11 +9,9 @@ Public Class ThisAddIn
 
     Public Const UnknownFolderName = "/_Unknown/"
     Public Log As HPHelper.DebugTesting
-    Public WithEvents TimerForRefresh As New Timer
-    Public WithEvents TimerFirstSerialization As New Timer
+    Public WithEvents TimerForRefresh3min As New Timer
 
     Public CacheDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Cached")
-
     Public CInternalDocTypesPath = Path.Combine(CacheDirectory, "InternalDocTypes.json")
     Public CNonWorkDocTypesPath = Path.Combine(CacheDirectory, "NonWorkDocTypes.json")
     Public CWorkDocTypesPath = Path.Combine(CacheDirectory, "WorkDocTypes.json")
@@ -22,21 +20,22 @@ Public Class ThisAddIn
     Public CPrioritiesPath = Path.Combine(CacheDirectory, "Priorities.json")
     Public CTasksPath = Path.Combine(CacheDirectory, "Tasks.json")
     Public CTermsPath = Path.Combine(CacheDirectory, "Terms.json")
-
     Public CTaskTypesPath = Path.Combine(CacheDirectory, "TaskTypes.json")
     Public CUsersPath = Path.Combine(CacheDirectory, "Users.json")
     Public CKeywords = Path.Combine(CacheDirectory, "Keywords.json")
-    Public IsThisFirstStart As Boolean = False
 
+    Public RefreshCounter As Byte = 1
+
+    Private Function GetCachePath(name As String) As String
+        Return Path.Combine(CacheDirectory, name + ".json")
+    End Function
 
     Private Sub ThisAddIn_Startup() Handles Me.Startup
         Logstart()
-        StartSp()
         SetAndVerifyTempPath()
-        TimerForRefresh.Interval = 20 * 60 * 1000
-        TimerForRefresh.Start()
-        TimerFirstSerialization.Interval = 3 * 60 * 1000
-        TimerFirstSerialization.Start()
+        StartSpLoadCacheSpRefresh()
+        TimerForRefresh3min.Interval = 3 * 60 * 1000
+        TimerForRefresh3min.Start()
     End Sub
 
     Private Sub ThisAddIn_Shutdown() Handles Me.Shutdown
@@ -52,10 +51,10 @@ Public Class ThisAddIn
         Log = New HPHelper.DebugTesting(logfilepath)
         Log.logger.Info(My.Application.Info.AssemblyName & " started")
     End Sub
-    Private Sub StartSp()
+    Private Async Sub StartSpLoadCacheSpRefresh()
         Me.Connection = New SPHelper.SPHUI()
         LoadCachedValues()
-        LoadSpLookupValues()
+        Await RefreshSpLookupValues(False)
     End Sub
     Private Sub SetAndVerifyTempPath()
         Globals.ThisAddIn.TempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName)
@@ -65,45 +64,40 @@ Public Class ThisAddIn
         If Not Directory.Exists(Me.TempPath) Then Directory.CreateDirectory(Me.TempPath)
         Globals.ThisAddIn.Log.logger.Info("SetAndVerifyTempPath finished")
     End Sub
-    Private Sub TimerForRefresh_Tick(sender As Object, e As EventArgs) Handles TimerForRefresh.Tick
-        RefreshSpLookupValues()
-    End Sub
-    Private Sub TimerFirstSerialization_Tick(sender As Object, e As EventArgs) Handles TimerFirstSerialization.Tick
-        SerializeValues()
-        TimerFirstSerialization.Stop()
+
+    Private Async Sub TimerForRefresh3min_Tick(sender As Object, e As EventArgs) Handles TimerForRefresh3min.Tick
+        If RefreshCounter Mod 10 = 0 Then
+            Await RefreshSpLookupValues(PartialRefresh:=False)
+            SerializeValues(False)
+        Else
+            Await RefreshSpLookupValues(PartialRefresh:=True)
+            SerializeValues(True)
+        End If
+        RefreshCounter += 1
     End Sub
 
-    Public Async Sub LoadSpLookupValues()
-        'deserialize-oltokat betölti, és beállítja az async-ot
-        'Matter értékek: Id, Value, Active
-        'Person értékek: adott matterhöz tartozó personok = Id, Value, Active, Matter
-        'Users értékek: Id, loginname
-        'Term értékek?
-        'Task értékek?
-        Await RefreshSpLookupValues()
-    End Sub
-    Public Async Function RefreshSpLookupValues() As Task
+    Public Async Function RefreshSpLookupValues(PartialRefresh As Boolean) As Task
         Dim m As New DataLayer()
-        Me.Connection.Connect(My.Settings.spUrl)
         If Me.Connection.Connected = False Then
-            Globals.ThisAddIn.Log.logger.Info("No connection, no refresh")
-            Exit Function
+            Me.Connection.Connect(My.Settings.spUrl)
+            If Me.Connection.Connected = False Then
+                Globals.ThisAddIn.Log.logger.Info("No connection, no refresh")
+                Exit Function
+            End If
         End If
-        Me.Connection.Users = Await m.GetAllUsers(Me.Connection)
-        Me.Connection.Matters = Await m.GetAllMattersAsync(Me.Connection)
+        If PartialRefresh = False Then
+            Me.Connection.Users = Await m.GetAllUsers(Me.Connection)
+            Me.Connection.Matters = Await m.GetAllMattersAsync(Me.Connection)
+            Me.Connection.InternalDocTypes = m.GetAllInternalDocTypes(Me.Connection)
+            Me.Connection.WorkDocumentType = Await m.GetAllWorkDocTypesAsync(Me.Connection)
+            Await LoadChoiceColumns(m)
+        End If
         Me.Connection.Persons = Await m.GetAllPersonsAsync(Me.Connection)
         Me.Connection.Tasks = Await m.GetAllTasksAsync(Me.Connection)
         Me.Connection.AllTerms = Await m.GetAllTermsAsync(Me.Connection)
         Me.Connection.Keywords = Await m.GetAllKeywords(Me.Connection)
-        Me.Connection.InternalDocTypes = m.GetAllInternalDocTypes(Me.Connection)
-        Me.Connection.WorkDocumentType = Await m.GetAllWorkDocTypesAsync(Me.Connection)
-        Await LoadChoiceColumns(m)
+
         Globals.ThisAddIn.Log.logger.Info("RefreshSpLookupValues finished")
-        If IsThisFirstStart = True Then
-            SerializeValues()
-        Else
-            IsThisFirstStart = True
-        End If
     End Function
     Private Async Function LoadChoiceColumns(input As DataLayer) As Task
         Dim DictionaryToLoad As Dictionary(Of String, Microsoft.SharePoint.Client.FieldMultiChoice) = Await input.GetAllColumnChoiceTypesAsync(Me.Connection)
@@ -123,55 +117,62 @@ Public Class ThisAddIn
         Next
     End Function
     Private Sub LoadCachedValues()
-        If File.Exists(CWorkDocTypesPath) Then Me.Connection.WorkDocumentType = DeserializeWorkDocTypes(CWorkDocTypesPath)
-        If File.Exists(CTermsPath) Then Me.Connection.AllTerms = DeserializeTerms(CTermsPath)
-        If File.Exists(CInternalDocTypesPath) Then Me.Connection.InternalDocTypes = DeserializeTerms(CInternalDocTypesPath)
-        If File.Exists(CKeywords) Then Me.Connection.Keywords = DeserializeTerms(CUsersPath)
-        If File.Exists(CUsersPath) Then Me.Connection.Users = DeserializeUsers(CUsersPath)
-        If File.Exists(CNonWorkDocTypesPath) Then Me.Connection.NonWorkDocTypes = DeserializeListofString(CNonWorkDocTypesPath)
-        If File.Exists(CTaskTypesPath) Then Me.Connection.TaskTypes = DeserializeListofString(CTaskTypesPath)
-        If File.Exists(CPrioritiesPath) Then Me.Connection.Priorities = DeserializeListofString(CPrioritiesPath)
-        If File.Exists(CMattersPath) Then Me.Connection.Matters = DeserializeMatterClass(CMattersPath)
-        If File.Exists(CPersonsPath) Then Me.Connection.Persons = DeserializePersonClass(CPersonsPath)
-        If File.Exists(CTasksPath) Then Me.Connection.Tasks = DeserializeTaskClass(CTasksPath)
+        Me.Connection.AllTerms = DeserializeTerms(CTermsPath)
+        Me.Connection.InternalDocTypes = DeserializeTerms(CInternalDocTypesPath)
+        Me.Connection.Keywords = DeserializeTerms(CKeywords)
+        Me.Connection.NonWorkDocTypes = DeserializeListofString(CNonWorkDocTypesPath)
+        Me.Connection.TaskTypes = DeserializeListofString(CTaskTypesPath)
+        Me.Connection.Priorities = DeserializeListofString(CPrioritiesPath)
+        Me.Connection.Users = DeserializeUsers(CUsersPath)
+        Me.Connection.WorkDocumentType = DeserializeWorkDocTypes(CWorkDocTypesPath)
+        Me.Connection.Matters = DeserializeMatterClass(CMattersPath)
+        Me.Connection.Persons = DeserializePersonClass(CPersonsPath)
+        Me.Connection.Tasks = DeserializeTaskClass(CTasksPath)
         Globals.ThisAddIn.Log.logger.Info("Values loaded from cache.")
     End Sub
-    Private Sub SerializeValues()
+    Private Sub SerializeValues(PartialRefresh As Boolean)
         If Not Directory.Exists(CacheDirectory) Then
             Directory.CreateDirectory(CacheDirectory)
             Globals.ThisAddIn.Log.logger.Info("Cache directory created at " & CacheDirectory)
         End If
         Dim success As Byte = 0
+        'Dim ObjectsToCheck = {Me.Connection.Keywords, Me.Connection.Users, Me.Connection.WorkDocumentType, Me.Connection.NonWorkDocTypes, Me.Connection.TaskTypes, Me.Connection.Priorities, Me.Connection.AllTerms}
+        If PartialRefresh = False Then
+            If Not IsNothing(Me.Connection.Users) AndAlso Me.Connection.Users.Count > 0 Then
+                Dim succeeded = HPHelper.Serialize.Serialize(CUsersPath, Me.Connection.Users)
+                If succeeded Then success += 1
+            End If
+            If Not IsNothing(Me.Connection.WorkDocumentType) AndAlso Me.Connection.WorkDocumentType.Count > 0 Then
+                Dim succeeded = HPHelper.Serialize.Serialize(CWorkDocTypesPath, Me.Connection.WorkDocumentType)
+                If succeeded Then success += 1
+            End If
+            If Not IsNothing(Me.Connection.NonWorkDocTypes) AndAlso Me.Connection.NonWorkDocTypes.Count > 0 Then
+                Dim succeeded = HPHelper.Serialize.Serialize(CNonWorkDocTypesPath, Me.Connection.NonWorkDocTypes)
+                If succeeded Then success += 1
+            End If
+            If Not IsNothing(Me.Connection.TaskTypes) AndAlso Me.Connection.TaskTypes.Count > 0 Then
+                Dim succeeded = HPHelper.Serialize.Serialize(CTaskTypesPath, Me.Connection.TaskTypes)
+                If succeeded Then success += 1
+            End If
+            If Not IsNothing(Me.Connection.Priorities) AndAlso Me.Connection.Priorities.Count > 0 Then
+                Dim succeeded = HPHelper.Serialize.Serialize(CPrioritiesPath, Me.Connection.Priorities)
+                If succeeded Then success += 1
+            End If
+            If Not IsNothing(Me.Connection.InternalDocTypes) AndAlso Me.Connection.InternalDocTypes.Count > 0 Then
+                Dim succeeded = HPHelper.Serialize.Serialize(CInternalDocTypesPath, Me.Connection.InternalDocTypes)
+                If succeeded Then success += 1
+            End If
+            If Not IsNothing(Me.Connection.Matters) AndAlso Me.Connection.Matters.Count > 0 Then
+                Dim succeeded = HPHelper.Serialize.Serialize(CMattersPath, Me.Connection.Matters)
+                If succeeded Then success += 1
+            End If
+        End If
         If Not IsNothing(Me.Connection.Keywords) AndAlso Me.Connection.Keywords.Count > 0 Then
             Dim succeeded = HPHelper.Serialize.Serialize(CKeywords, Me.Connection.Keywords)
             If succeeded Then success += 1
         End If
-        If Not IsNothing(Me.Connection.Users) AndAlso Me.Connection.Users.Count > 0 Then
-            Dim succeeded = HPHelper.Serialize.Serialize(CUsersPath, Me.Connection.Users)
-            If succeeded Then success += 1
-        End If
-        If Not IsNothing(Me.Connection.WorkDocumentType) AndAlso Me.Connection.WorkDocumentType.Count > 0 Then
-            Dim succeeded = HPHelper.Serialize.Serialize(CWorkDocTypesPath, Me.Connection.WorkDocumentType)
-            If succeeded Then success += 1
-        End If
-        If Not IsNothing(Me.Connection.NonWorkDocTypes) AndAlso Me.Connection.NonWorkDocTypes.Count > 0 Then
-            Dim succeeded = HPHelper.Serialize.Serialize(CNonWorkDocTypesPath, Me.Connection.NonWorkDocTypes)
-            If succeeded Then success += 1
-        End If
-        If Not IsNothing(Me.Connection.TaskTypes) AndAlso Me.Connection.TaskTypes.Count > 0 Then
-            Dim succeeded = HPHelper.Serialize.Serialize(CTaskTypesPath, Me.Connection.TaskTypes)
-            If succeeded Then success += 1
-        End If
-        If Not IsNothing(Me.Connection.Priorities) AndAlso Me.Connection.Priorities.Count > 0 Then
-            Dim succeeded = HPHelper.Serialize.Serialize(CPrioritiesPath, Me.Connection.Priorities)
-            If succeeded Then success += 1
-        End If
         If Not IsNothing(Me.Connection.AllTerms) AndAlso Me.Connection.AllTerms.Count > 0 Then
             Dim succeeded = HPHelper.Serialize.Serialize(CTermsPath, Me.Connection.AllTerms)
-            If succeeded Then success += 1
-        End If
-        If Not IsNothing(Me.Connection.InternalDocTypes) AndAlso Me.Connection.InternalDocTypes.Count > 0 Then
-            Dim succeeded = HPHelper.Serialize.Serialize(CInternalDocTypesPath, Me.Connection.InternalDocTypes)
             If succeeded Then success += 1
         End If
         If Not IsNothing(Me.Connection.Tasks) AndAlso Me.Connection.Tasks.Count > 0 Then
@@ -180,10 +181,6 @@ Public Class ThisAddIn
         End If
         If Not IsNothing(Me.Connection.Persons) AndAlso Me.Connection.Persons.Count > 0 Then
             Dim succeeded = HPHelper.Serialize.Serialize(CPersonsPath, Me.Connection.Persons)
-            If succeeded Then success += 1
-        End If
-        If Not IsNothing(Me.Connection.Matters) AndAlso Me.Connection.Matters.Count > 0 Then
-            Dim succeeded = HPHelper.Serialize.Serialize(CMattersPath, Me.Connection.Matters)
             If succeeded Then success += 1
         End If
         Globals.ThisAddIn.Log.logger.Info("Items serialized from memory to file (" & success & ")")
