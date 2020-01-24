@@ -26,35 +26,79 @@ Partial Class HUI_TaskDocFormRegion
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         Me.lblConversationID = New System.Windows.Forms.Label()
-        Me.cbKeresConvIDTask = New System.Windows.Forms.Button()
+        Me.btnFuzzLeElozmenyhez = New System.Windows.Forms.Button()
+        Me.cbTasksFound = New System.Windows.Forms.ComboBox()
+        Me.btnChooseOtherTask = New System.Windows.Forms.Button()
+        Me.btnCsakCsatolmanyokLementese = New System.Windows.Forms.Button()
+        Me.btnNewTask = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'lblConversationID
         '
         Me.lblConversationID.AutoSize = True
-        Me.lblConversationID.Location = New System.Drawing.Point(3, 9)
+        Me.lblConversationID.Location = New System.Drawing.Point(3, 27)
         Me.lblConversationID.Name = "lblConversationID"
-        Me.lblConversationID.Size = New System.Drawing.Size(230, 13)
+        Me.lblConversationID.Size = New System.Drawing.Size(98, 13)
         Me.lblConversationID.TabIndex = 0
-        Me.lblConversationID.Text = "Nem tartozik ehhez a ConversationID-hez Task"
+        Me.lblConversationID.Text = "Valami label üzenet"
         '
-        'cbKeresConvIDTask
+        'btnFuzzLeElozmenyhez
         '
-        Me.cbKeresConvIDTask.Location = New System.Drawing.Point(253, 124)
-        Me.cbKeresConvIDTask.Name = "cbKeresConvIDTask"
-        Me.cbKeresConvIDTask.Size = New System.Drawing.Size(93, 23)
-        Me.cbKeresConvIDTask.TabIndex = 1
-        Me.cbKeresConvIDTask.Text = "Keress Taskban"
-        Me.cbKeresConvIDTask.UseVisualStyleBackColor = True
+        Me.btnFuzzLeElozmenyhez.Location = New System.Drawing.Point(227, 27)
+        Me.btnFuzzLeElozmenyhez.Name = "btnFuzzLeElozmenyhez"
+        Me.btnFuzzLeElozmenyhez.Size = New System.Drawing.Size(116, 23)
+        Me.btnFuzzLeElozmenyhez.TabIndex = 1
+        Me.btnFuzzLeElozmenyhez.Text = "Fűzze le a fentihez"
+        Me.btnFuzzLeElozmenyhez.UseVisualStyleBackColor = True
+        '
+        'cbTasksFound
+        '
+        Me.cbTasksFound.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.cbTasksFound.FormattingEnabled = True
+        Me.cbTasksFound.Location = New System.Drawing.Point(3, 3)
+        Me.cbTasksFound.Name = "cbTasksFound"
+        Me.cbTasksFound.Size = New System.Drawing.Size(340, 21)
+        Me.cbTasksFound.TabIndex = 2
+        '
+        'btnChooseOtherTask
+        '
+        Me.btnChooseOtherTask.Location = New System.Drawing.Point(227, 57)
+        Me.btnChooseOtherTask.Name = "btnChooseOtherTask"
+        Me.btnChooseOtherTask.Size = New System.Drawing.Size(116, 23)
+        Me.btnChooseOtherTask.TabIndex = 3
+        Me.btnChooseOtherTask.Text = "Másik feladathoz fűz"
+        Me.btnChooseOtherTask.UseVisualStyleBackColor = True
+        '
+        'btnCsakCsatolmanyokLementese
+        '
+        Me.btnCsakCsatolmanyokLementese.Location = New System.Drawing.Point(107, 27)
+        Me.btnCsakCsatolmanyokLementese.Name = "btnCsakCsatolmanyokLementese"
+        Me.btnCsakCsatolmanyokLementese.Size = New System.Drawing.Size(116, 53)
+        Me.btnCsakCsatolmanyokLementese.TabIndex = 4
+        Me.btnCsakCsatolmanyokLementese.Text = "Csak csatolmányok lementése"
+        Me.btnCsakCsatolmanyokLementese.UseVisualStyleBackColor = True
+        '
+        'btnNewTask
+        '
+        Me.btnNewTask.Location = New System.Drawing.Point(227, 86)
+        Me.btnNewTask.Name = "btnNewTask"
+        Me.btnNewTask.Size = New System.Drawing.Size(116, 23)
+        Me.btnNewTask.TabIndex = 5
+        Me.btnNewTask.Text = "Új feladathoz fűz"
+        Me.btnNewTask.UseVisualStyleBackColor = True
         '
         'HUI_TaskDocFormRegion
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.Controls.Add(Me.cbKeresConvIDTask)
+        Me.Controls.Add(Me.btnNewTask)
+        Me.Controls.Add(Me.btnCsakCsatolmanyokLementese)
+        Me.Controls.Add(Me.btnChooseOtherTask)
+        Me.Controls.Add(Me.cbTasksFound)
+        Me.Controls.Add(Me.btnFuzzLeElozmenyhez)
         Me.Controls.Add(Me.lblConversationID)
         Me.Name = "HUI_TaskDocFormRegion"
-        Me.Size = New System.Drawing.Size(349, 150)
+        Me.Size = New System.Drawing.Size(357, 150)
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -73,7 +117,12 @@ Partial Class HUI_TaskDocFormRegion
 
     Friend WithEvents lblConversationID As Windows.Forms.Label
 
-    Friend WithEvents cbKeresConvIDTask As Windows.Forms.Button
+    Friend WithEvents btnFuzzLeElozmenyhez As Windows.Forms.Button
+    Friend WithEvents cbTasksFound As Windows.Forms.ComboBox
+    Friend WithEvents btnChooseOtherTask As Windows.Forms.Button
+
+    Friend WithEvents btnCsakCsatolmanyokLementese As Windows.Forms.Button
+    Friend WithEvents btnNewTask As Windows.Forms.Button
 
     Partial Public Class HUI_TaskDocFormRegionFactory
         Implements Microsoft.Office.Tools.Outlook.IFormRegionFactory

@@ -2,7 +2,9 @@
 Imports System.IO
 Imports System.Runtime.CompilerServices
 Imports System.Runtime.InteropServices
+Imports System.Text.RegularExpressions
 Imports Microsoft.Office.Interop.Outlook
+Imports SPHelper.SPHUI
 
 Module OutlookApplicationHelper
     Public Const Separator = "|"
@@ -152,4 +154,30 @@ Module OutlookApplicationHelper
         End If
         If IsNothing(InspectorMailItem) Then Return ExplorerMailItem Else Return InspectorMailItem
     End Function
+#Region "GetResultsfromMailItem"
+    Public Function GetTaskClassesFromMailBody(_sourceItem As MailItem) As IEnumerable(Of TaskClass)
+        Dim MySPHUI = Globals.ThisAddIn.Connection
+        Dim MailBody As String = String.Empty
+        If Not IsNothing(_sourceItem.Body) Then
+            MailBody = _sourceItem.Body.ToString()
+        Else
+            Return Nothing
+        End If
+        Dim resultStr = MatchesToListofString(Regex.Matches(MailBody, Globals.ThisAddIn.Connection.RE.TaskRegExp))
+        Dim resultTaskClasses As New List(Of TaskClass)
+        For Each idString In resultStr
+            Dim singleTask As TaskClass = MySPHUI.ConvertTaskIdToTaskClass(MySPHUI.ConvertTaskIdToInteger(idString))
+            If Not IsNothing(singleTask) Then resultTaskClasses.Add(singleTask)
+        Next
+        Return resultTaskClasses
+    End Function
+
+#End Region
+#Region "Regexp Related Functions"
+    Private Function MatchesToListofString(input As MatchCollection) As List(Of String)
+        Dim listofmatches As List(Of Match) = input.Cast(Of Match).ToList
+        Return listofmatches.Select(Function(m) m.Value).ToList
+    End Function
+
+#End Region
 End Module

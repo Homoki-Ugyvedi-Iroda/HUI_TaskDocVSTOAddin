@@ -1,4 +1,5 @@
 ﻿Imports System.Windows.Forms
+Imports SPHelper.SPHUI
 
 Public Class HUI_TaskDocFormRegion
 
@@ -27,9 +28,20 @@ Public Class HUI_TaskDocFormRegion
     'Use Me.OutlookItem to get a reference to the current Outlook item.
     'Use Me.OutlookFormRegion to get a reference to the form region.
     Private Sub HUI_TaskDocFormRegion_FormRegionShowing(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionShowing
+        Dim NotFound = "Nem találtam előzményt."
         CurrentMail = GetSelectedMailItem(Globals.ThisAddIn.Application)
-        lblConversationIDFrissítés()
+        cbTasksFound.Text = NotFound
+        If Not IsNothing(CurrentMail) AndAlso Not IsNothing(CurrentMail.ConversationID) Then
+            Dim ResultFromConversationID As List(Of TaskClass) = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ConversationID = CurrentMail.ConversationID).ToList
+            Dim ResultFromBody As List(Of TaskClass) = GetTaskClassesFromMailBody(CurrentMail)
+            cbTasksFound.DisplayMember = "TitleOrTaskName"
+            cbTasksFound.ValueMember = "ID"
+            cbTasksFound.Items.AddRange(ResultFromConversationID.ToArray)
+            cbTasksFound.Items.AddRange(ResultFromBody.ToArray)
+            If cbTasksFound.Items.Count = 0 Then cbTasksFound.Text = NotFound
+        End If
     End Sub
+
 
     'Occurs when the form region is closed.   
     'Use Me.OutlookItem to get a reference to the current Outlook item.
@@ -38,10 +50,21 @@ Public Class HUI_TaskDocFormRegion
 
     End Sub
 
-    Private Sub cbKeresConvIDTask_Click(sender As Object, e As EventArgs) Handles cbKeresConvIDTask.Click
-        If Not IsNothing(CurrentMail.ConversationID) Then
-            'Globals.ThisAddIn.Connection.GetListItemsWEmailID(SPHelper.SPHUI.TaskClass.ListName, CurrentMail.ConversationID, SPHelper.SPHUI.SphuiListToUse.Task, vbYes, "EmConversationID")
-        End If
+    Private Sub cbFuzzLeElozmenyhez_Click(sender As Object, e As EventArgs) Handles btnFuzzLeElozmenyhez.Click
+        If IsNothing(CurrentMail.ConversationID) Then Exit Sub
+        '#a cbTasksFound szerinti Selected TaskID-hoz fűzze le ezt az emailt, azaz: 
+        '   (A) csatolmányként lementi Taskhoz (egyszerű, de nem lesz kereshető), é/v 
+        '   (B) lementi a Task adatai szerinti Dochelyre [oda is rögzíti a TaskID-t és a TaskID egyéb beállításait], ÉS belinkeli a lementést a Taskhoz,
+        '       mentési fájlnév és adatok automatizáltan vagy külön ablak [=régi FileMail]? ilyenkor egész emailt menti, csatolmányokat nem kezeli külön
+
+        'Dim result As List(Of TaskClass) = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ConversationID = CurrentMail.ConversationID).ToList
+        'Dim TaskTitlesFound As String = String.Empty
+        'For Each _task As TaskClass In result
+        '    TaskTitlesFound += _task.TitleOrTaskName
+        'Next
+        'If result.Count = 0 Then lblConversationID.Text = "Nem találtam" Else lblConversationID.Text = TaskTitlesFound
+        'Result.Count szerint válogathatunk irányadó Task közül => lefűz ide, lefűz alá új subtaskként [új adatok?], lefűz új taskként [új adatok?], tasklist megnyitása
+
     End Sub
     Private Sub lblConversationIDFrissítés()
         lblConversationID.Text = "Nem tartozik ehhez a ConversationID-hez Task"
@@ -51,5 +74,20 @@ Public Class HUI_TaskDocFormRegion
         Else
             lblConversationID.Text = "Nincsen mail"
         End If
+    End Sub
+
+    Private Sub cbTaskForThisConversationId_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cbTasksFound.SelectedIndexChanged
+    End Sub
+
+    Private Sub btnCsakCsatolmanyokLementese_Click(sender As Object, e As EventArgs) Handles btnCsakCsatolmanyokLementese.Click
+        '#Csativálasztó listával, mentési fájlnév és adatok automatizáltan vagy külön ablak?  
+    End Sub
+
+    Private Sub btnChooseOtherTask_Click(sender As Object, e As EventArgs) Handles btnChooseOtherTask.Click
+        '#Feladatválasztó ablak után lényegében azt kínálja fel, mint btnFuzzLeElozmenyhez esetén
+    End Sub
+
+    Private Sub btnNewTask_Click(sender As Object, e As EventArgs) Handles btnNewTask.Click
+        '# létrehoz egy új üres taskot, amihez csatolja ezt az emailt/csatolmányt és annak megfelelő, SP szerinti új task ablak megnyitása? 
     End Sub
 End Class
