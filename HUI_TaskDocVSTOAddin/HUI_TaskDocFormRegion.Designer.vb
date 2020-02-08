@@ -27,45 +27,45 @@ Partial Class HUI_TaskDocFormRegion
     Private Sub InitializeComponent()
         Me.TabControl1 = New System.Windows.Forms.TabControl()
         Me.TabFileAsDoc = New System.Windows.Forms.TabPage()
-        Me.TabFileAsTask = New System.Windows.Forms.TabPage()
-        Me.TabCreateTask = New System.Windows.Forms.TabPage()
-        Me.TableLayoutPanelCreateNewTask = New System.Windows.Forms.TableLayoutPanel()
-        Me.cbTaskChosenHistoryNewTask = New System.Windows.Forms.ComboBox()
-        Me.TableLayoutPanelTop = New System.Windows.Forms.TableLayoutPanel()
-        Me.cbFileEmailOrAttachments = New System.Windows.Forms.ComboBox()
-        Me.tbTitleFile = New System.Windows.Forms.TextBox()
-        Me.Label1 = New System.Windows.Forms.Label()
-        Me.Label2 = New System.Windows.Forms.Label()
-        Me.btnHistoryChosenAsTemplateForNewTask = New System.Windows.Forms.Button()
-        Me.btnExistingTaskChoiceAsTemplateForNewTask = New System.Windows.Forms.Button()
-        Me.TableLayoutPanelFileToTaskAsItem = New System.Windows.Forms.TableLayoutPanel()
-        Me.Label3 = New System.Windows.Forms.Label()
-        Me.cbTaskChosenHistoryFileTask = New System.Windows.Forms.ComboBox()
-        Me.btnFileToChosenHistoryFileTask = New System.Windows.Forms.Button()
-        Me.btnExistingTaskChoiceAsFileTo = New System.Windows.Forms.Button()
         Me.TableLayoutPanelFileToDocLibrary = New System.Windows.Forms.TableLayoutPanel()
-        Me.Label4 = New System.Windows.Forms.Label()
         Me.cbFileHistory = New System.Windows.Forms.ComboBox()
+        Me.Label4 = New System.Windows.Forms.Label()
         Me.Label5 = New System.Windows.Forms.Label()
         Me.cbMatter = New System.Windows.Forms.ComboBox()
+        Me.tbPathToSaveTo = New System.Windows.Forms.TextBox()
         Me.btnOpenFolder = New System.Windows.Forms.Button()
         Me.cbFolderTypeToUse = New System.Windows.Forms.ComboBox()
         Me.Label6 = New System.Windows.Forms.Label()
         Me.cbPartner = New System.Windows.Forms.ComboBox()
         Me.btnAddPartnerFile = New System.Windows.Forms.Button()
-        Me.tbPathToSaveTo = New System.Windows.Forms.TextBox()
         Me.tbPartnersTotal = New System.Windows.Forms.TextBox()
         Me.btnDeleteLastPartner = New System.Windows.Forms.Button()
         Me.btnPartnerQryMailBody = New System.Windows.Forms.Button()
         Me.btnFileToDocLibrary = New System.Windows.Forms.Button()
+        Me.TabFileAsTask = New System.Windows.Forms.TabPage()
+        Me.TableLayoutPanelFileToTaskAsItem = New System.Windows.Forms.TableLayoutPanel()
+        Me.btnExistingTaskChoiceAsFileTo = New System.Windows.Forms.Button()
+        Me.btnFileToChosenHistoryFileTask = New System.Windows.Forms.Button()
+        Me.cbTaskChosenHistoryFileTask = New System.Windows.Forms.ComboBox()
+        Me.Label3 = New System.Windows.Forms.Label()
+        Me.TabCreateTask = New System.Windows.Forms.TabPage()
+        Me.TableLayoutPanelCreateNewTask = New System.Windows.Forms.TableLayoutPanel()
+        Me.cbTaskChosenHistoryNewTask = New System.Windows.Forms.ComboBox()
+        Me.Label2 = New System.Windows.Forms.Label()
+        Me.btnHistoryChosenAsTemplateForNewTask = New System.Windows.Forms.Button()
+        Me.btnExistingTaskChoiceAsTemplateForNewTask = New System.Windows.Forms.Button()
+        Me.TableLayoutPanelTop = New System.Windows.Forms.TableLayoutPanel()
+        Me.cbFileEmailOrAttachments = New System.Windows.Forms.ComboBox()
+        Me.tbTitleFile = New System.Windows.Forms.TextBox()
+        Me.Label1 = New System.Windows.Forms.Label()
         Me.TabControl1.SuspendLayout()
         Me.TabFileAsDoc.SuspendLayout()
+        Me.TableLayoutPanelFileToDocLibrary.SuspendLayout()
         Me.TabFileAsTask.SuspendLayout()
+        Me.TableLayoutPanelFileToTaskAsItem.SuspendLayout()
         Me.TabCreateTask.SuspendLayout()
         Me.TableLayoutPanelCreateNewTask.SuspendLayout()
         Me.TableLayoutPanelTop.SuspendLayout()
-        Me.TableLayoutPanelFileToTaskAsItem.SuspendLayout()
-        Me.TableLayoutPanelFileToDocLibrary.SuspendLayout()
         Me.SuspendLayout()
         '
         'TabControl1
@@ -92,198 +92,6 @@ Partial Class HUI_TaskDocFormRegion
         Me.TabFileAsDoc.Size = New System.Drawing.Size(705, 116)
         Me.TabFileAsDoc.TabIndex = 0
         Me.TabFileAsDoc.Text = "File to DocLibrary"
-        '
-        'TabFileAsTask
-        '
-        Me.TabFileAsTask.BackColor = System.Drawing.Color.LightSkyBlue
-        Me.TabFileAsTask.Controls.Add(Me.TableLayoutPanelFileToTaskAsItem)
-        Me.TabFileAsTask.Location = New System.Drawing.Point(4, 22)
-        Me.TabFileAsTask.Name = "TabFileAsTask"
-        Me.TabFileAsTask.Padding = New System.Windows.Forms.Padding(3)
-        Me.TabFileAsTask.Size = New System.Drawing.Size(705, 116)
-        Me.TabFileAsTask.TabIndex = 1
-        Me.TabFileAsTask.Text = "File to Task As Item"
-        '
-        'TabCreateTask
-        '
-        Me.TabCreateTask.BackColor = System.Drawing.Color.PaleGreen
-        Me.TabCreateTask.Controls.Add(Me.TableLayoutPanelCreateNewTask)
-        Me.TabCreateTask.Location = New System.Drawing.Point(4, 22)
-        Me.TabCreateTask.Name = "TabCreateTask"
-        Me.TabCreateTask.Size = New System.Drawing.Size(705, 116)
-        Me.TabCreateTask.TabIndex = 2
-        Me.TabCreateTask.Text = "Create New Task"
-        '
-        'TableLayoutPanelCreateNewTask
-        '
-        Me.TableLayoutPanelCreateNewTask.ColumnCount = 2
-        Me.TableLayoutPanelCreateNewTask.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
-        Me.TableLayoutPanelCreateNewTask.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
-        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.cbTaskChosenHistoryNewTask, 1, 0)
-        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.Label2, 0, 0)
-        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnHistoryChosenAsTemplateForNewTask, 1, 1)
-        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnExistingTaskChoiceAsTemplateForNewTask, 0, 2)
-        Me.TableLayoutPanelCreateNewTask.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.TableLayoutPanelCreateNewTask.Location = New System.Drawing.Point(0, 0)
-        Me.TableLayoutPanelCreateNewTask.Name = "TableLayoutPanelCreateNewTask"
-        Me.TableLayoutPanelCreateNewTask.RowCount = 3
-        Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20.0!))
-        Me.TableLayoutPanelCreateNewTask.Size = New System.Drawing.Size(705, 116)
-        Me.TableLayoutPanelCreateNewTask.TabIndex = 0
-        '
-        'cbTaskChosenHistoryNewTask
-        '
-        Me.cbTaskChosenHistoryNewTask.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.cbTaskChosenHistoryNewTask.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.cbTaskChosenHistoryNewTask.FormattingEnabled = True
-        Me.cbTaskChosenHistoryNewTask.Location = New System.Drawing.Point(162, 3)
-        Me.cbTaskChosenHistoryNewTask.MaxDropDownItems = 20
-        Me.cbTaskChosenHistoryNewTask.Name = "cbTaskChosenHistoryNewTask"
-        Me.cbTaskChosenHistoryNewTask.Size = New System.Drawing.Size(540, 21)
-        Me.cbTaskChosenHistoryNewTask.TabIndex = 0
-        '
-        'TableLayoutPanelTop
-        '
-        Me.TableLayoutPanelTop.ColumnCount = 2
-        Me.TableLayoutPanelTop.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
-        Me.TableLayoutPanelTop.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
-        Me.TableLayoutPanelTop.Controls.Add(Me.cbFileEmailOrAttachments, 0, 0)
-        Me.TableLayoutPanelTop.Controls.Add(Me.TabControl1, 2, 1)
-        Me.TableLayoutPanelTop.Controls.Add(Me.tbTitleFile, 1, 1)
-        Me.TableLayoutPanelTop.Controls.Add(Me.Label1, 0, 1)
-        Me.TableLayoutPanelTop.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.TableLayoutPanelTop.Location = New System.Drawing.Point(0, 0)
-        Me.TableLayoutPanelTop.Name = "TableLayoutPanelTop"
-        Me.TableLayoutPanelTop.RowCount = 3
-        Me.TableLayoutPanelTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.TableLayoutPanelTop.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30.0!))
-        Me.TableLayoutPanelTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.TableLayoutPanelTop.Size = New System.Drawing.Size(719, 205)
-        Me.TableLayoutPanelTop.TabIndex = 1
-        '
-        'cbFileEmailOrAttachments
-        '
-        Me.TableLayoutPanelTop.SetColumnSpan(Me.cbFileEmailOrAttachments, 2)
-        Me.cbFileEmailOrAttachments.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.cbFileEmailOrAttachments.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.cbFileEmailOrAttachments.FormattingEnabled = True
-        Me.cbFileEmailOrAttachments.Items.AddRange(New Object() {"The full email (including attachments)", "The email without attachments"})
-        Me.cbFileEmailOrAttachments.Location = New System.Drawing.Point(3, 3)
-        Me.cbFileEmailOrAttachments.Name = "cbFileEmailOrAttachments"
-        Me.cbFileEmailOrAttachments.Size = New System.Drawing.Size(713, 21)
-        Me.cbFileEmailOrAttachments.TabIndex = 0
-        '
-        'tbTitleFile
-        '
-        Me.tbTitleFile.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.tbTitleFile.Location = New System.Drawing.Point(73, 30)
-        Me.tbTitleFile.Name = "tbTitleFile"
-        Me.tbTitleFile.Size = New System.Drawing.Size(643, 20)
-        Me.tbTitleFile.TabIndex = 1
-        '
-        'Label1
-        '
-        Me.Label1.AutoSize = True
-        Me.Label1.Location = New System.Drawing.Point(3, 27)
-        Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(64, 13)
-        Me.Label1.TabIndex = 2
-        Me.Label1.Text = "Title (Name)"
-        '
-        'Label2
-        '
-        Me.Label2.AutoSize = True
-        Me.Label2.Location = New System.Drawing.Point(5, 5)
-        Me.Label2.Margin = New System.Windows.Forms.Padding(5, 5, 5, 0)
-        Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(149, 13)
-        Me.Label2.TabIndex = 2
-        Me.Label2.Text = "Use previous task as template"
-        '
-        'btnHistoryChosenAsTemplateForNewTask
-        '
-        Me.btnHistoryChosenAsTemplateForNewTask.AutoSize = True
-        Me.btnHistoryChosenAsTemplateForNewTask.Location = New System.Drawing.Point(162, 30)
-        Me.btnHistoryChosenAsTemplateForNewTask.Name = "btnHistoryChosenAsTemplateForNewTask"
-        Me.btnHistoryChosenAsTemplateForNewTask.Size = New System.Drawing.Size(197, 23)
-        Me.btnHistoryChosenAsTemplateForNewTask.TabIndex = 3
-        Me.btnHistoryChosenAsTemplateForNewTask.Text = "Use chosen previous task as template"
-        Me.btnHistoryChosenAsTemplateForNewTask.UseVisualStyleBackColor = True
-        '
-        'btnExistingTaskChoiceAsTemplateForNewTask
-        '
-        Me.btnExistingTaskChoiceAsTemplateForNewTask.AutoSize = True
-        Me.TableLayoutPanelCreateNewTask.SetColumnSpan(Me.btnExistingTaskChoiceAsTemplateForNewTask, 2)
-        Me.btnExistingTaskChoiceAsTemplateForNewTask.Location = New System.Drawing.Point(3, 59)
-        Me.btnExistingTaskChoiceAsTemplateForNewTask.Name = "btnExistingTaskChoiceAsTemplateForNewTask"
-        Me.btnExistingTaskChoiceAsTemplateForNewTask.Size = New System.Drawing.Size(287, 23)
-        Me.btnExistingTaskChoiceAsTemplateForNewTask.TabIndex = 1
-        Me.btnExistingTaskChoiceAsTemplateForNewTask.Text = "Choose existing task as template for template to new task"
-        Me.btnExistingTaskChoiceAsTemplateForNewTask.UseVisualStyleBackColor = True
-        '
-        'TableLayoutPanelFileToTaskAsItem
-        '
-        Me.TableLayoutPanelFileToTaskAsItem.ColumnCount = 2
-        Me.TableLayoutPanelFileToTaskAsItem.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
-        Me.TableLayoutPanelFileToTaskAsItem.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
-        Me.TableLayoutPanelFileToTaskAsItem.Controls.Add(Me.btnExistingTaskChoiceAsFileTo, 0, 2)
-        Me.TableLayoutPanelFileToTaskAsItem.Controls.Add(Me.btnFileToChosenHistoryFileTask, 1, 1)
-        Me.TableLayoutPanelFileToTaskAsItem.Controls.Add(Me.cbTaskChosenHistoryFileTask, 1, 0)
-        Me.TableLayoutPanelFileToTaskAsItem.Controls.Add(Me.Label3, 0, 0)
-        Me.TableLayoutPanelFileToTaskAsItem.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.TableLayoutPanelFileToTaskAsItem.Location = New System.Drawing.Point(3, 3)
-        Me.TableLayoutPanelFileToTaskAsItem.Name = "TableLayoutPanelFileToTaskAsItem"
-        Me.TableLayoutPanelFileToTaskAsItem.RowCount = 3
-        Me.TableLayoutPanelFileToTaskAsItem.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.TableLayoutPanelFileToTaskAsItem.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.TableLayoutPanelFileToTaskAsItem.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20.0!))
-        Me.TableLayoutPanelFileToTaskAsItem.Size = New System.Drawing.Size(699, 110)
-        Me.TableLayoutPanelFileToTaskAsItem.TabIndex = 0
-        '
-        'Label3
-        '
-        Me.Label3.AutoSize = True
-        Me.Label3.Location = New System.Drawing.Point(5, 5)
-        Me.Label3.Margin = New System.Windows.Forms.Padding(5, 5, 5, 0)
-        Me.Label3.Name = "Label3"
-        Me.Label3.Size = New System.Drawing.Size(111, 13)
-        Me.Label3.TabIndex = 3
-        Me.Label3.Text = "Previous task to file to"
-        '
-        'cbTaskChosenHistoryFileTask
-        '
-        Me.cbTaskChosenHistoryFileTask.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.cbTaskChosenHistoryFileTask.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.cbTaskChosenHistoryFileTask.FormattingEnabled = True
-        Me.cbTaskChosenHistoryFileTask.Location = New System.Drawing.Point(124, 3)
-        Me.cbTaskChosenHistoryFileTask.MaxDropDownItems = 20
-        Me.cbTaskChosenHistoryFileTask.Name = "cbTaskChosenHistoryFileTask"
-        Me.cbTaskChosenHistoryFileTask.Size = New System.Drawing.Size(572, 21)
-        Me.cbTaskChosenHistoryFileTask.TabIndex = 4
-        '
-        'btnFileToChosenHistoryFileTask
-        '
-        Me.btnFileToChosenHistoryFileTask.AutoSize = True
-        Me.btnFileToChosenHistoryFileTask.Location = New System.Drawing.Point(124, 30)
-        Me.btnFileToChosenHistoryFileTask.Name = "btnFileToChosenHistoryFileTask"
-        Me.btnFileToChosenHistoryFileTask.Size = New System.Drawing.Size(197, 23)
-        Me.btnFileToChosenHistoryFileTask.TabIndex = 5
-        Me.btnFileToChosenHistoryFileTask.Text = "File to chosen previous task"
-        Me.btnFileToChosenHistoryFileTask.UseVisualStyleBackColor = True
-        '
-        'btnExistingTaskChoiceAsFileTo
-        '
-        Me.btnExistingTaskChoiceAsFileTo.AutoSize = True
-        Me.TableLayoutPanelFileToTaskAsItem.SetColumnSpan(Me.btnExistingTaskChoiceAsFileTo, 2)
-        Me.btnExistingTaskChoiceAsFileTo.Location = New System.Drawing.Point(3, 59)
-        Me.btnExistingTaskChoiceAsFileTo.Name = "btnExistingTaskChoiceAsFileTo"
-        Me.btnExistingTaskChoiceAsFileTo.Size = New System.Drawing.Size(287, 23)
-        Me.btnExistingTaskChoiceAsFileTo.TabIndex = 6
-        Me.btnExistingTaskChoiceAsFileTo.Text = "Choose other existing task to file to"
-        Me.btnExistingTaskChoiceAsFileTo.UseVisualStyleBackColor = True
         '
         'TableLayoutPanelFileToDocLibrary
         '
@@ -319,16 +127,6 @@ Partial Class HUI_TaskDocFormRegion
         Me.TableLayoutPanelFileToDocLibrary.Size = New System.Drawing.Size(699, 110)
         Me.TableLayoutPanelFileToDocLibrary.TabIndex = 0
         '
-        'Label4
-        '
-        Me.Label4.AutoSize = True
-        Me.Label4.Location = New System.Drawing.Point(5, 5)
-        Me.Label4.Margin = New System.Windows.Forms.Padding(5, 5, 0, 0)
-        Me.Label4.Name = "Label4"
-        Me.Label4.Size = New System.Drawing.Size(101, 13)
-        Me.Label4.TabIndex = 4
-        Me.Label4.Text = "History for metadata"
-        '
         'cbFileHistory
         '
         Me.TableLayoutPanelFileToDocLibrary.SetColumnSpan(Me.cbFileHistory, 3)
@@ -340,6 +138,16 @@ Partial Class HUI_TaskDocFormRegion
         Me.cbFileHistory.Name = "cbFileHistory"
         Me.cbFileHistory.Size = New System.Drawing.Size(400, 21)
         Me.cbFileHistory.TabIndex = 5
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.Location = New System.Drawing.Point(5, 5)
+        Me.Label4.Margin = New System.Windows.Forms.Padding(5, 5, 0, 0)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(101, 13)
+        Me.Label4.TabIndex = 4
+        Me.Label4.Text = "History for metadata"
         '
         'Label5
         '
@@ -359,6 +167,15 @@ Partial Class HUI_TaskDocFormRegion
         Me.cbMatter.Name = "cbMatter"
         Me.cbMatter.Size = New System.Drawing.Size(187, 21)
         Me.cbMatter.TabIndex = 7
+        '
+        'tbPathToSaveTo
+        '
+        Me.TableLayoutPanelFileToDocLibrary.SetColumnSpan(Me.tbPathToSaveTo, 2)
+        Me.tbPathToSaveTo.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.tbPathToSaveTo.Location = New System.Drawing.Point(302, 30)
+        Me.tbPathToSaveTo.Name = "tbPathToSaveTo"
+        Me.tbPathToSaveTo.Size = New System.Drawing.Size(207, 20)
+        Me.tbPathToSaveTo.TabIndex = 8
         '
         'btnOpenFolder
         '
@@ -409,15 +226,6 @@ Partial Class HUI_TaskDocFormRegion
         Me.btnAddPartnerFile.Text = "»"
         Me.btnAddPartnerFile.UseVisualStyleBackColor = True
         '
-        'tbPathToSaveTo
-        '
-        Me.TableLayoutPanelFileToDocLibrary.SetColumnSpan(Me.tbPathToSaveTo, 2)
-        Me.tbPathToSaveTo.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.tbPathToSaveTo.Location = New System.Drawing.Point(302, 30)
-        Me.tbPathToSaveTo.Name = "tbPathToSaveTo"
-        Me.tbPathToSaveTo.Size = New System.Drawing.Size(207, 20)
-        Me.tbPathToSaveTo.TabIndex = 8
-        '
         'tbPartnersTotal
         '
         Me.tbPartnersTotal.BackColor = System.Drawing.SystemColors.Control
@@ -459,6 +267,198 @@ Partial Class HUI_TaskDocFormRegion
         Me.btnFileToDocLibrary.Text = "File"
         Me.btnFileToDocLibrary.UseVisualStyleBackColor = True
         '
+        'TabFileAsTask
+        '
+        Me.TabFileAsTask.BackColor = System.Drawing.Color.LightSkyBlue
+        Me.TabFileAsTask.Controls.Add(Me.TableLayoutPanelFileToTaskAsItem)
+        Me.TabFileAsTask.Location = New System.Drawing.Point(4, 22)
+        Me.TabFileAsTask.Name = "TabFileAsTask"
+        Me.TabFileAsTask.Padding = New System.Windows.Forms.Padding(3)
+        Me.TabFileAsTask.Size = New System.Drawing.Size(705, 116)
+        Me.TabFileAsTask.TabIndex = 1
+        Me.TabFileAsTask.Text = "File to Task As Item"
+        '
+        'TableLayoutPanelFileToTaskAsItem
+        '
+        Me.TableLayoutPanelFileToTaskAsItem.ColumnCount = 2
+        Me.TableLayoutPanelFileToTaskAsItem.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
+        Me.TableLayoutPanelFileToTaskAsItem.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
+        Me.TableLayoutPanelFileToTaskAsItem.Controls.Add(Me.btnExistingTaskChoiceAsFileTo, 0, 2)
+        Me.TableLayoutPanelFileToTaskAsItem.Controls.Add(Me.btnFileToChosenHistoryFileTask, 1, 1)
+        Me.TableLayoutPanelFileToTaskAsItem.Controls.Add(Me.cbTaskChosenHistoryFileTask, 1, 0)
+        Me.TableLayoutPanelFileToTaskAsItem.Controls.Add(Me.Label3, 0, 0)
+        Me.TableLayoutPanelFileToTaskAsItem.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.TableLayoutPanelFileToTaskAsItem.Location = New System.Drawing.Point(3, 3)
+        Me.TableLayoutPanelFileToTaskAsItem.Name = "TableLayoutPanelFileToTaskAsItem"
+        Me.TableLayoutPanelFileToTaskAsItem.RowCount = 3
+        Me.TableLayoutPanelFileToTaskAsItem.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.TableLayoutPanelFileToTaskAsItem.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.TableLayoutPanelFileToTaskAsItem.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20.0!))
+        Me.TableLayoutPanelFileToTaskAsItem.Size = New System.Drawing.Size(699, 110)
+        Me.TableLayoutPanelFileToTaskAsItem.TabIndex = 0
+        '
+        'btnExistingTaskChoiceAsFileTo
+        '
+        Me.btnExistingTaskChoiceAsFileTo.AutoSize = True
+        Me.TableLayoutPanelFileToTaskAsItem.SetColumnSpan(Me.btnExistingTaskChoiceAsFileTo, 2)
+        Me.btnExistingTaskChoiceAsFileTo.Location = New System.Drawing.Point(3, 59)
+        Me.btnExistingTaskChoiceAsFileTo.Name = "btnExistingTaskChoiceAsFileTo"
+        Me.btnExistingTaskChoiceAsFileTo.Size = New System.Drawing.Size(287, 23)
+        Me.btnExistingTaskChoiceAsFileTo.TabIndex = 6
+        Me.btnExistingTaskChoiceAsFileTo.Text = "Choose other existing task to file to"
+        Me.btnExistingTaskChoiceAsFileTo.UseVisualStyleBackColor = True
+        '
+        'btnFileToChosenHistoryFileTask
+        '
+        Me.btnFileToChosenHistoryFileTask.AutoSize = True
+        Me.btnFileToChosenHistoryFileTask.Location = New System.Drawing.Point(124, 30)
+        Me.btnFileToChosenHistoryFileTask.Name = "btnFileToChosenHistoryFileTask"
+        Me.btnFileToChosenHistoryFileTask.Size = New System.Drawing.Size(197, 23)
+        Me.btnFileToChosenHistoryFileTask.TabIndex = 5
+        Me.btnFileToChosenHistoryFileTask.Text = "File to chosen previous task"
+        Me.btnFileToChosenHistoryFileTask.UseVisualStyleBackColor = True
+        '
+        'cbTaskChosenHistoryFileTask
+        '
+        Me.cbTaskChosenHistoryFileTask.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.cbTaskChosenHistoryFileTask.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.cbTaskChosenHistoryFileTask.FormattingEnabled = True
+        Me.cbTaskChosenHistoryFileTask.Location = New System.Drawing.Point(124, 3)
+        Me.cbTaskChosenHistoryFileTask.MaxDropDownItems = 20
+        Me.cbTaskChosenHistoryFileTask.Name = "cbTaskChosenHistoryFileTask"
+        Me.cbTaskChosenHistoryFileTask.Size = New System.Drawing.Size(572, 21)
+        Me.cbTaskChosenHistoryFileTask.TabIndex = 4
+        '
+        'Label3
+        '
+        Me.Label3.AutoSize = True
+        Me.Label3.Location = New System.Drawing.Point(5, 5)
+        Me.Label3.Margin = New System.Windows.Forms.Padding(5, 5, 5, 0)
+        Me.Label3.Name = "Label3"
+        Me.Label3.Size = New System.Drawing.Size(111, 13)
+        Me.Label3.TabIndex = 3
+        Me.Label3.Text = "Previous task to file to"
+        '
+        'TabCreateTask
+        '
+        Me.TabCreateTask.BackColor = System.Drawing.Color.PaleGreen
+        Me.TabCreateTask.Controls.Add(Me.TableLayoutPanelCreateNewTask)
+        Me.TabCreateTask.Location = New System.Drawing.Point(4, 22)
+        Me.TabCreateTask.Name = "TabCreateTask"
+        Me.TabCreateTask.Size = New System.Drawing.Size(705, 116)
+        Me.TabCreateTask.TabIndex = 2
+        Me.TabCreateTask.Text = "Create New Task"
+        '
+        'TableLayoutPanelCreateNewTask
+        '
+        Me.TableLayoutPanelCreateNewTask.ColumnCount = 2
+        Me.TableLayoutPanelCreateNewTask.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
+        Me.TableLayoutPanelCreateNewTask.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
+        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.cbTaskChosenHistoryNewTask, 1, 0)
+        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.Label2, 0, 0)
+        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnHistoryChosenAsTemplateForNewTask, 1, 1)
+        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnExistingTaskChoiceAsTemplateForNewTask, 0, 2)
+        Me.TableLayoutPanelCreateNewTask.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.TableLayoutPanelCreateNewTask.Location = New System.Drawing.Point(0, 0)
+        Me.TableLayoutPanelCreateNewTask.Name = "TableLayoutPanelCreateNewTask"
+        Me.TableLayoutPanelCreateNewTask.RowCount = 3
+        Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20.0!))
+        Me.TableLayoutPanelCreateNewTask.Size = New System.Drawing.Size(705, 116)
+        Me.TableLayoutPanelCreateNewTask.TabIndex = 0
+        '
+        'cbTaskChosenHistoryNewTask
+        '
+        Me.cbTaskChosenHistoryNewTask.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.cbTaskChosenHistoryNewTask.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.cbTaskChosenHistoryNewTask.FormattingEnabled = True
+        Me.cbTaskChosenHistoryNewTask.Location = New System.Drawing.Point(162, 3)
+        Me.cbTaskChosenHistoryNewTask.MaxDropDownItems = 20
+        Me.cbTaskChosenHistoryNewTask.Name = "cbTaskChosenHistoryNewTask"
+        Me.cbTaskChosenHistoryNewTask.Size = New System.Drawing.Size(540, 21)
+        Me.cbTaskChosenHistoryNewTask.TabIndex = 0
+        '
+        'Label2
+        '
+        Me.Label2.AutoSize = True
+        Me.Label2.Location = New System.Drawing.Point(5, 5)
+        Me.Label2.Margin = New System.Windows.Forms.Padding(5, 5, 5, 0)
+        Me.Label2.Name = "Label2"
+        Me.Label2.Size = New System.Drawing.Size(149, 13)
+        Me.Label2.TabIndex = 2
+        Me.Label2.Text = "Use previous task as template"
+        '
+        'btnHistoryChosenAsTemplateForNewTask
+        '
+        Me.btnHistoryChosenAsTemplateForNewTask.AutoSize = True
+        Me.btnHistoryChosenAsTemplateForNewTask.Location = New System.Drawing.Point(162, 30)
+        Me.btnHistoryChosenAsTemplateForNewTask.Name = "btnHistoryChosenAsTemplateForNewTask"
+        Me.btnHistoryChosenAsTemplateForNewTask.Size = New System.Drawing.Size(197, 23)
+        Me.btnHistoryChosenAsTemplateForNewTask.TabIndex = 3
+        Me.btnHistoryChosenAsTemplateForNewTask.Text = "Use chosen previous task as template"
+        Me.btnHistoryChosenAsTemplateForNewTask.UseVisualStyleBackColor = True
+        '
+        'btnExistingTaskChoiceAsTemplateForNewTask
+        '
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.AutoSize = True
+        Me.TableLayoutPanelCreateNewTask.SetColumnSpan(Me.btnExistingTaskChoiceAsTemplateForNewTask, 2)
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.Location = New System.Drawing.Point(3, 59)
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.Name = "btnExistingTaskChoiceAsTemplateForNewTask"
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.Size = New System.Drawing.Size(287, 23)
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.TabIndex = 1
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.Text = "Choose existing task as template for template to new task"
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.UseVisualStyleBackColor = True
+        '
+        'TableLayoutPanelTop
+        '
+        Me.TableLayoutPanelTop.ColumnCount = 2
+        Me.TableLayoutPanelTop.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
+        Me.TableLayoutPanelTop.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
+        Me.TableLayoutPanelTop.Controls.Add(Me.cbFileEmailOrAttachments, 0, 0)
+        Me.TableLayoutPanelTop.Controls.Add(Me.TabControl1, 2, 1)
+        Me.TableLayoutPanelTop.Controls.Add(Me.tbTitleFile, 1, 1)
+        Me.TableLayoutPanelTop.Controls.Add(Me.Label1, 0, 1)
+        Me.TableLayoutPanelTop.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.TableLayoutPanelTop.Location = New System.Drawing.Point(0, 0)
+        Me.TableLayoutPanelTop.Name = "TableLayoutPanelTop"
+        Me.TableLayoutPanelTop.RowCount = 3
+        Me.TableLayoutPanelTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.TableLayoutPanelTop.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30.0!))
+        Me.TableLayoutPanelTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.TableLayoutPanelTop.Size = New System.Drawing.Size(719, 205)
+        Me.TableLayoutPanelTop.TabIndex = 1
+        '
+        'cbFileEmailOrAttachments
+        '
+        Me.TableLayoutPanelTop.SetColumnSpan(Me.cbFileEmailOrAttachments, 2)
+        Me.cbFileEmailOrAttachments.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.cbFileEmailOrAttachments.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.cbFileEmailOrAttachments.FormattingEnabled = True
+        Me.cbFileEmailOrAttachments.Items.AddRange(New Object() {"The full email (including attachments)", "The email without attachments"})
+        Me.cbFileEmailOrAttachments.Location = New System.Drawing.Point(3, 3)
+        Me.cbFileEmailOrAttachments.Name = "cbFileEmailOrAttachments"
+        Me.cbFileEmailOrAttachments.Size = New System.Drawing.Size(713, 21)
+        Me.cbFileEmailOrAttachments.TabIndex = 0
+        '
+        'tbTitleFile
+        '
+        Me.tbTitleFile.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.tbTitleFile.Location = New System.Drawing.Point(73, 30)
+        Me.tbTitleFile.Name = "tbTitleFile"
+        Me.tbTitleFile.Size = New System.Drawing.Size(643, 20)
+        Me.tbTitleFile.TabIndex = 1
+        '
+        'Label1
+        '
+        Me.Label1.AutoSize = True
+        Me.Label1.Location = New System.Drawing.Point(3, 27)
+        Me.Label1.Name = "Label1"
+        Me.Label1.Size = New System.Drawing.Size(64, 13)
+        Me.Label1.TabIndex = 2
+        Me.Label1.Text = "Title (Name)"
+        '
         'HUI_TaskDocFormRegion
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -468,16 +468,16 @@ Partial Class HUI_TaskDocFormRegion
         Me.Size = New System.Drawing.Size(719, 205)
         Me.TabControl1.ResumeLayout(False)
         Me.TabFileAsDoc.ResumeLayout(False)
+        Me.TableLayoutPanelFileToDocLibrary.ResumeLayout(False)
+        Me.TableLayoutPanelFileToDocLibrary.PerformLayout()
         Me.TabFileAsTask.ResumeLayout(False)
+        Me.TableLayoutPanelFileToTaskAsItem.ResumeLayout(False)
+        Me.TableLayoutPanelFileToTaskAsItem.PerformLayout()
         Me.TabCreateTask.ResumeLayout(False)
         Me.TableLayoutPanelCreateNewTask.ResumeLayout(False)
         Me.TableLayoutPanelCreateNewTask.PerformLayout()
         Me.TableLayoutPanelTop.ResumeLayout(False)
         Me.TableLayoutPanelTop.PerformLayout()
-        Me.TableLayoutPanelFileToTaskAsItem.ResumeLayout(False)
-        Me.TableLayoutPanelFileToTaskAsItem.PerformLayout()
-        Me.TableLayoutPanelFileToDocLibrary.ResumeLayout(False)
-        Me.TableLayoutPanelFileToDocLibrary.PerformLayout()
         Me.ResumeLayout(False)
 
     End Sub
