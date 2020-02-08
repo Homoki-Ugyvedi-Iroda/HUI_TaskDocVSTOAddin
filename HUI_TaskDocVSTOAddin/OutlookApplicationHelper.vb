@@ -155,15 +155,19 @@ Module OutlookApplicationHelper
         If IsNothing(InspectorMailItem) Then Return ExplorerMailItem Else Return InspectorMailItem
     End Function
 #Region "GetResultsfromMailItem"
-    Public Function GetTaskClassesFromMailBody(_sourceItem As MailItem) As IEnumerable(Of TaskClass)
-        Dim MySPHUI = Globals.ThisAddIn.Connection
-        Dim MailBody As String = String.Empty
-        If Not IsNothing(_sourceItem.Body) Then
-            MailBody = _sourceItem.Body.ToString()
+    Private Function GetMailBody(_sourceItem As MailItem) As String
+        If Not IsNothing(_sourceItem) AndAlso Not IsNothing(_sourceItem.Body) Then
+            Return _sourceItem.Body.ToString()
         Else
             Return Nothing
         End If
-        Dim resultStr = MatchesToListofString(Regex.Matches(MailBody, Globals.ThisAddIn.Connection.RE.TaskRegExp))
+    End Function
+    Public Function GetTaskClassesFromMailBody(_sourceItem As MailItem) As IEnumerable(Of TaskClass)
+        Dim MySPHUI = Globals.ThisAddIn.Connection
+        Dim MailBody As String = GetMailBody(_sourceItem)
+        If String.IsNullOrWhiteSpace(MailBody) Then Return Nothing
+
+        Dim resultStr = MatchesToListofString(Regex.Matches(MailBody, RE.TaskRegExp))
         Dim resultTaskClasses As New List(Of TaskClass)
         For Each idString In resultStr
             Dim singleTask As TaskClass = MySPHUI.ConvertTaskIdToTaskClass(MySPHUI.ConvertTaskIdToInteger(idString))
@@ -171,7 +175,31 @@ Module OutlookApplicationHelper
         Next
         Return resultTaskClasses
     End Function
+    Public Function GetDefaultNonMatterPartnersfromBodyText(_sourceItem As MailItem, selectedMatter As MatterClass) As IEnumerable(Of PersonClass)
+        Dim MySPHUI = Globals.ThisAddIn.Connection
+        Dim MailBody As String = GetMailBody(_sourceItem)
+        If String.IsNullOrWhiteSpace(MailBody) Then Return Nothing
+        If IsNothing(selectedMatter) Then Return Nothing
 
+        Dim result As New List(Of PersonClass)
+        Dim ListToSearch As New List(Of PersonClass)
+        For Each Partner As PersonClass In MySPHUI.Persons.Where(Function(x) Not x.Matter.Equals(selectedMatter))
+            Dim PartnerLength = Partner.Value.Length
+            Dim InterimStr = Partner.Value.Replace(" ", "")
+            If InterimStr.Length < 3 Then Continue For
+            ListToSearch.Add(Partner)
+        Next
+        For Each listelement In ListToSearch
+            If Not IsNothing(listelement.CodeName) AndAlso MailBody.Contains(listelement.CodeName) Then
+                result.Add(listelement)
+                Continue For
+            End If
+            If listelement.Value.Length > 6 AndAlso result.Contains(listelement) = False AndAlso MailBody.Contains(listelement.Value) Then
+                result.Add(listelement)
+            End If
+        Next
+        Return result
+    End Function
 #End Region
 #Region "Regexp Related Functions"
     Private Function MatchesToListofString(input As MatchCollection) As List(Of String)

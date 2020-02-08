@@ -28,18 +28,11 @@ Public Class HUI_TaskDocFormRegion
     'Use Me.OutlookItem to get a reference to the current Outlook item.
     'Use Me.OutlookFormRegion to get a reference to the form region.
     Private Sub HUI_TaskDocFormRegion_FormRegionShowing(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionShowing
-        'Dim NotFound = "Nem találtam előzményt."
-        'CurrentMail = GetSelectedMailItem(Globals.ThisAddIn.Application)
-        'cbTasksFound.Text = NotFound
-        'If Not IsNothing(CurrentMail) AndAlso Not IsNothing(CurrentMail.ConversationID) Then
-        '    Dim ResultFromConversationID As List(Of TaskClass) = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ConversationID = CurrentMail.ConversationID).ToList
-        '    Dim ResultFromBody As List(Of TaskClass) = GetTaskClassesFromMailBody(CurrentMail)
-        '    cbTasksFound.DisplayMember = "TitleOrTaskName"
-        '    cbTasksFound.ValueMember = "ID"
-        '    cbTasksFound.Items.AddRange(ResultFromConversationID.ToArray)
-        '    cbTasksFound.Items.AddRange(ResultFromBody.ToArray)
-        '    If cbTasksFound.Items.Count = 0 Then cbTasksFound.Text = NotFound
-        'End If
+        'Feltölti a három cb-t értékekkel, mindhárom cb értéke azonos, csak a Taskból és a body-ból veszi ki a history-t
+        LoadValuesIntocbTaskChosen({cbTaskChosenHistoryNewTask, cbTaskChosenHistoryFileTask, cbFileHistory})
+        cbFolderTypeToUse.SelectedValue = "Default"
+        LoadValuesIncbMattersAllActive()
+        LoadValuesIncbPartnersAllActive()
     End Sub
 
 
@@ -48,6 +41,32 @@ Public Class HUI_TaskDocFormRegion
     'Use Me.OutlookFormRegion to get a reference to the form region.
     Private Sub HUI_TaskDocFormRegion_FormRegionClosed(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionClosed
 
+    End Sub
+    Private Sub LoadValuesIntocbTaskChosen(cbControls As IEnumerable(Of ComboBox))
+        CurrentMail = GetSelectedMailItem(Globals.ThisAddIn.Application)
+        If Not IsNothing(CurrentMail) AndAlso Not IsNothing(CurrentMail.ConversationID) Then
+            Dim ResultFromConversationID As List(Of TaskClass) = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ConversationID = CurrentMail.ConversationID).ToList
+            Dim ResultFromBody As List(Of TaskClass) = GetTaskClassesFromMailBody(CurrentMail)
+            For Each comboBox In cbControls
+                comboBox.DisplayMember = "TitleOrTaskName"
+                comboBox.ValueMember = "ID"
+                comboBox.Items.AddRange(ResultFromConversationID.ToArray)
+                comboBox.Items.AddRange(ResultFromBody.ToArray)
+            Next
+        End If
+    End Sub
+    Private Sub LoadValuesIncbMattersAllActive()
+        cbMatter.DisplayMember = "Value"
+        cbMatter.ValueMember = "ID"
+        cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Matters.Where(Function(x) x.Active = True).ToArray)
+    End Sub
+
+    Private Sub LoadValuesIncbPartnersAllActive()
+        cbPartner.DisplayMember = "Title"
+        cbPartner.ValueMember = "ID"
+        cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Active = True).ToArray)
+        lbTotalPartners.DisplayMember = "Title"
+        lbTotalPartners.ValueMember = "ID"
     End Sub
 
     Private Sub cbFuzzLeElozmenyhez_Click(sender As Object, e As EventArgs)
@@ -79,13 +98,13 @@ Public Class HUI_TaskDocFormRegion
     Private Sub cbTaskForThisConversationId_SelectedIndexChanged(sender As Object, e As EventArgs)
     End Sub
 
-    Private Sub btnCsakCsatolmanyokLementese_Click(sender As Object, e As EventArgs)
-        '#Csativálasztó listával, mentési fájlnév és adatok automatizáltan vagy külön ablak?  
-        'legtöbb művelet ezt igényli, nem kizárólag feladathoz mentjük az emailek többségét;
-        'esetleg fájllefűzésből fűzzük hozzá mindig taskhoz?
-        'előzménykereső ablak?
-        'metaadatkitöltés - taskból; -fi
-    End Sub
+    'Private Sub btnCsakCsatolmanyokLementese_Click(sender As Object, e As EventArgs)
+    '    '#Csativálasztó listával, mentési fájlnév és adatok automatizáltan vagy külön ablak?  
+    '    'legtöbb művelet ezt igényli, nem kizárólag feladathoz mentjük az emailek többségét;
+    '    'esetleg fájllefűzésből fűzzük hozzá mindig taskhoz?
+    '    'előzménykereső ablak?
+    '    'metaadatkitöltés - taskból; -fi
+    'End Sub
 
     Private Sub btnChooseOtherTask_Click(sender As Object, e As EventArgs)
         '#Feladatválasztó ablak után lényegében azt kínálja fel, mint btnFuzzLeElozmenyhez esetén
@@ -95,19 +114,60 @@ Public Class HUI_TaskDocFormRegion
         '# létrehoz egy új üres taskot, amihez csatolja ezt az emailt/csatolmányt és annak megfelelő, SP szerinti új task ablak megnyitása? 
     End Sub
 
-    Private Sub TableLayoutPanel1_Paint(sender As Object, e As PaintEventArgs) Handles TableLayoutPanelTop.Paint
+    Private Sub btnHistoryChosenAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnHistoryChosenAsTemplateForNewTask.Click
+        If IsNothing(cbTaskChosenHistoryNewTask.SelectedValue) Then Exit Sub
+        '#Mentse le egy új taskként a korábbi adataival, majd nyissa meg egy böngészőablakban az új taskot
+    End Sub
+
+    Private Sub btnExistingTaskChoiceAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsTemplateForNewTask.Click
+        '#feladatválasztó ablakot hívja meg
+    End Sub
+
+    'Private Sub btnFileToChosenHistoryFileTask_Click(sender As Object, e As EventArgs) Handles btnFileToChosenHistoryFileTask.Click
+    '    If IsNothing(cbTaskChosenHistoryFileTask.SelectedValue) Then Exit Sub
+    '    '#Mentse le az itemet a korábbi task metaadataival, majd fűzze hozzá related item-ként a korábbi taskhoz
+
+    'End Sub
+
+    Private Sub btnFileToDocLibrary_Click(sender As Object, e As EventArgs) Handles btnFileToDocLibrary.Click
+        '#Mentse le az itemet a kiválasztott matter és partner metaadatokkal.
+        'Ha volt korábbi task kiválasztva a cbFileHistory-ban, akkor fűzze hozzá a taskhoz related item-ként az új itemet
 
     End Sub
 
-    Private Sub Label3_Click(sender As Object, e As EventArgs) Handles Label3.Click
+    Private Sub btnExistingTaskChoiceAsFileTo_File_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsFileTo_File.Click
+        '#feladatválasztó ablakot hívja meg
+    End Sub
 
+    Private Sub btnAddPartnerFile_Click(sender As Object, e As EventArgs) Handles btnAddPartnerFile.Click
+        If IsNothing(cbPartner.SelectedValue) Then Exit Sub
+        lbTotalPartners.Items.Add(cbPartner.SelectedItem)
+    End Sub
+
+    Private Sub btnDeleteLastPartner_Click(sender As Object, e As EventArgs) Handles btnDeleteLastPartner.Click
+        If lbTotalPartners.Items.Count < 1 Then Exit Sub
+        lbTotalPartners.Items.Remove(lbTotalPartners.Items.Count - 1)
+    End Sub
+
+    Private Sub btnOpenFolder_Click(sender As Object, e As EventArgs) Handles btnOpenFolder.Click
+        '#tbPathtoSaveTo szerinti útvonalat nyissa meg böngészőben
     End Sub
 
     Private Sub cbFolderTypeToUse_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cbFolderTypeToUse.SelectedIndexChanged
+        '#Generálja újra az útvonalat a kiválasztott típusnak megfelelően
+        'GetPathfromSecondLevelValues(cbMatterFile.SelectedItem, cbWorkDocType:=cbWorkDocType, ProjectorSystemText:=tbProjectSystemFile.Text, cbNonWorkDocType:=cbNonWorkDocType, PartnerTable:=PartnersFile, KeywordTable:=KeywordsFile)
 
     End Sub
 
-    Private Sub cbTaskChosenHistoryFileTask_SelectedIndexChanged(sender As Object, e As EventArgs) Handles cbTaskChosenHistoryFileTask.SelectedIndexChanged
-
+    Private Sub btnPartnerQryMailBody_Click(sender As Object, e As EventArgs) Handles btnPartnerQryMailBody.Click
+        Dim PartnersToAdd As New List(Of PersonClass)
+        Dim SelectedMatter As MatterClass = cbMatter.SelectedItem
+        If IsNothing(SelectedMatter) Then Exit Sub
+        PartnersToAdd = GetDefaultNonMatterPartnersfromBodyText(CurrentMail, SelectedMatter)
+        Dim DefaultPartner As PersonClass = Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Id = SelectedMatter.MatterDefaultPerson)
+        If Not IsNothing(DefaultPartner) Then
+            PartnersToAdd.Add(DefaultPartner)
+        End If
+        lbTotalPartners.Items.AddRange(PartnersToAdd.ToArray)
     End Sub
 End Class

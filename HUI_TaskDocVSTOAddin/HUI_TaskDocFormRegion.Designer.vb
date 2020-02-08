@@ -38,10 +38,11 @@ Partial Class HUI_TaskDocFormRegion
         Me.Label6 = New System.Windows.Forms.Label()
         Me.cbPartner = New System.Windows.Forms.ComboBox()
         Me.btnAddPartnerFile = New System.Windows.Forms.Button()
-        Me.tbPartnersTotal = New System.Windows.Forms.TextBox()
         Me.btnDeleteLastPartner = New System.Windows.Forms.Button()
         Me.btnPartnerQryMailBody = New System.Windows.Forms.Button()
         Me.btnFileToDocLibrary = New System.Windows.Forms.Button()
+        Me.btnExistingTaskChoiceAsFileTo_File = New System.Windows.Forms.Button()
+        Me.lbTotalPartners = New System.Windows.Forms.ListBox()
         Me.TabFileAsTask = New System.Windows.Forms.TabPage()
         Me.TableLayoutPanelFileToTaskAsItem = New System.Windows.Forms.TableLayoutPanel()
         Me.btnExistingTaskChoiceAsFileTo = New System.Windows.Forms.Button()
@@ -79,8 +80,9 @@ Partial Class HUI_TaskDocFormRegion
         Me.TabControl1.MaximumSize = New System.Drawing.Size(1920, 200)
         Me.TabControl1.Name = "TabControl1"
         Me.TabControl1.SelectedIndex = 0
-        Me.TabControl1.Size = New System.Drawing.Size(713, 142)
+        Me.TabControl1.Size = New System.Drawing.Size(713, 144)
         Me.TabControl1.TabIndex = 0
+        Me.TabControl1.Visible = False
         '
         'TabFileAsDoc
         '
@@ -89,7 +91,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.TabFileAsDoc.Location = New System.Drawing.Point(4, 22)
         Me.TabFileAsDoc.Name = "TabFileAsDoc"
         Me.TabFileAsDoc.Padding = New System.Windows.Forms.Padding(3)
-        Me.TabFileAsDoc.Size = New System.Drawing.Size(705, 116)
+        Me.TabFileAsDoc.Size = New System.Drawing.Size(705, 118)
         Me.TabFileAsDoc.TabIndex = 0
         Me.TabFileAsDoc.Text = "File to DocLibrary"
         '
@@ -112,10 +114,11 @@ Partial Class HUI_TaskDocFormRegion
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.Label6, 0, 2)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.cbPartner, 1, 2)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnAddPartnerFile, 2, 2)
-        Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.tbPartnersTotal, 3, 2)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnDeleteLastPartner, 5, 2)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnPartnerQryMailBody, 5, 3)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnFileToDocLibrary, 1, 3)
+        Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnExistingTaskChoiceAsFileTo_File, 5, 0)
+        Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.lbTotalPartners, 3, 2)
         Me.TableLayoutPanelFileToDocLibrary.Dock = System.Windows.Forms.DockStyle.Fill
         Me.TableLayoutPanelFileToDocLibrary.Location = New System.Drawing.Point(3, 3)
         Me.TableLayoutPanelFileToDocLibrary.Name = "TableLayoutPanelFileToDocLibrary"
@@ -124,7 +127,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.TableLayoutPanelFileToDocLibrary.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.TableLayoutPanelFileToDocLibrary.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.TableLayoutPanelFileToDocLibrary.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.TableLayoutPanelFileToDocLibrary.Size = New System.Drawing.Size(699, 110)
+        Me.TableLayoutPanelFileToDocLibrary.Size = New System.Drawing.Size(699, 112)
         Me.TableLayoutPanelFileToDocLibrary.TabIndex = 0
         '
         'cbFileHistory
@@ -152,7 +155,7 @@ Partial Class HUI_TaskDocFormRegion
         'Label5
         '
         Me.Label5.AutoSize = True
-        Me.Label5.Location = New System.Drawing.Point(5, 32)
+        Me.Label5.Location = New System.Drawing.Point(5, 34)
         Me.Label5.Margin = New System.Windows.Forms.Padding(5, 5, 5, 0)
         Me.Label5.Name = "Label5"
         Me.Label5.Size = New System.Drawing.Size(44, 13)
@@ -163,7 +166,7 @@ Partial Class HUI_TaskDocFormRegion
         '
         Me.cbMatter.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.cbMatter.FormattingEnabled = True
-        Me.cbMatter.Location = New System.Drawing.Point(109, 30)
+        Me.cbMatter.Location = New System.Drawing.Point(109, 32)
         Me.cbMatter.Name = "cbMatter"
         Me.cbMatter.Size = New System.Drawing.Size(187, 21)
         Me.cbMatter.TabIndex = 7
@@ -172,7 +175,7 @@ Partial Class HUI_TaskDocFormRegion
         '
         Me.TableLayoutPanelFileToDocLibrary.SetColumnSpan(Me.tbPathToSaveTo, 2)
         Me.tbPathToSaveTo.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.tbPathToSaveTo.Location = New System.Drawing.Point(302, 30)
+        Me.tbPathToSaveTo.Location = New System.Drawing.Point(302, 32)
         Me.tbPathToSaveTo.Name = "tbPathToSaveTo"
         Me.tbPathToSaveTo.Size = New System.Drawing.Size(207, 20)
         Me.tbPathToSaveTo.TabIndex = 8
@@ -181,7 +184,7 @@ Partial Class HUI_TaskDocFormRegion
         '
         Me.btnOpenFolder.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.btnOpenFolder.Location = New System.Drawing.Point(515, 30)
+        Me.btnOpenFolder.Location = New System.Drawing.Point(515, 32)
         Me.btnOpenFolder.Name = "btnOpenFolder"
         Me.btnOpenFolder.Size = New System.Drawing.Size(86, 23)
         Me.btnOpenFolder.TabIndex = 9
@@ -193,7 +196,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.cbFolderTypeToUse.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.cbFolderTypeToUse.FormattingEnabled = True
         Me.cbFolderTypeToUse.Items.AddRange(New Object() {"Default", "Partner", "WorkDocType", "NonWorkDocType", "ProjectOrSystem", "FirstKeyWord"})
-        Me.cbFolderTypeToUse.Location = New System.Drawing.Point(607, 30)
+        Me.cbFolderTypeToUse.Location = New System.Drawing.Point(607, 32)
         Me.cbFolderTypeToUse.Name = "cbFolderTypeToUse"
         Me.cbFolderTypeToUse.Size = New System.Drawing.Size(89, 21)
         Me.cbFolderTypeToUse.TabIndex = 10
@@ -201,7 +204,7 @@ Partial Class HUI_TaskDocFormRegion
         'Label6
         '
         Me.Label6.AutoSize = True
-        Me.Label6.Location = New System.Drawing.Point(5, 61)
+        Me.Label6.Location = New System.Drawing.Point(5, 63)
         Me.Label6.Margin = New System.Windows.Forms.Padding(5, 5, 5, 0)
         Me.Label6.Name = "Label6"
         Me.Label6.Size = New System.Drawing.Size(89, 13)
@@ -212,36 +215,23 @@ Partial Class HUI_TaskDocFormRegion
         '
         Me.cbPartner.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.cbPartner.FormattingEnabled = True
-        Me.cbPartner.Location = New System.Drawing.Point(109, 59)
+        Me.cbPartner.Location = New System.Drawing.Point(109, 61)
         Me.cbPartner.Name = "cbPartner"
         Me.cbPartner.Size = New System.Drawing.Size(187, 21)
         Me.cbPartner.TabIndex = 12
         '
         'btnAddPartnerFile
         '
-        Me.btnAddPartnerFile.Location = New System.Drawing.Point(302, 59)
+        Me.btnAddPartnerFile.Location = New System.Drawing.Point(302, 61)
         Me.btnAddPartnerFile.Name = "btnAddPartnerFile"
         Me.btnAddPartnerFile.Size = New System.Drawing.Size(19, 23)
         Me.btnAddPartnerFile.TabIndex = 13
         Me.btnAddPartnerFile.Text = "»"
         Me.btnAddPartnerFile.UseVisualStyleBackColor = True
         '
-        'tbPartnersTotal
-        '
-        Me.tbPartnersTotal.BackColor = System.Drawing.SystemColors.Control
-        Me.TableLayoutPanelFileToDocLibrary.SetColumnSpan(Me.tbPartnersTotal, 2)
-        Me.tbPartnersTotal.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.tbPartnersTotal.Location = New System.Drawing.Point(327, 59)
-        Me.tbPartnersTotal.Multiline = True
-        Me.tbPartnersTotal.Name = "tbPartnersTotal"
-        Me.TableLayoutPanelFileToDocLibrary.SetRowSpan(Me.tbPartnersTotal, 2)
-        Me.tbPartnersTotal.ScrollBars = System.Windows.Forms.ScrollBars.Vertical
-        Me.tbPartnersTotal.Size = New System.Drawing.Size(274, 52)
-        Me.tbPartnersTotal.TabIndex = 14
-        '
         'btnDeleteLastPartner
         '
-        Me.btnDeleteLastPartner.Location = New System.Drawing.Point(607, 59)
+        Me.btnDeleteLastPartner.Location = New System.Drawing.Point(607, 61)
         Me.btnDeleteLastPartner.Name = "btnDeleteLastPartner"
         Me.btnDeleteLastPartner.Size = New System.Drawing.Size(22, 23)
         Me.btnDeleteLastPartner.TabIndex = 15
@@ -251,7 +241,7 @@ Partial Class HUI_TaskDocFormRegion
         'btnPartnerQryMailBody
         '
         Me.btnPartnerQryMailBody.AutoSize = True
-        Me.btnPartnerQryMailBody.Location = New System.Drawing.Point(607, 88)
+        Me.btnPartnerQryMailBody.Location = New System.Drawing.Point(607, 90)
         Me.btnPartnerQryMailBody.Name = "btnPartnerQryMailBody"
         Me.btnPartnerQryMailBody.Size = New System.Drawing.Size(89, 23)
         Me.btnPartnerQryMailBody.TabIndex = 16
@@ -260,12 +250,37 @@ Partial Class HUI_TaskDocFormRegion
         '
         'btnFileToDocLibrary
         '
-        Me.btnFileToDocLibrary.Location = New System.Drawing.Point(109, 88)
+        Me.btnFileToDocLibrary.Location = New System.Drawing.Point(109, 90)
         Me.btnFileToDocLibrary.Name = "btnFileToDocLibrary"
         Me.btnFileToDocLibrary.Size = New System.Drawing.Size(75, 23)
         Me.btnFileToDocLibrary.TabIndex = 17
         Me.btnFileToDocLibrary.Text = "File"
         Me.btnFileToDocLibrary.UseVisualStyleBackColor = True
+        '
+        'btnExistingTaskChoiceAsFileTo_File
+        '
+        Me.btnExistingTaskChoiceAsFileTo_File.Anchor = CType((System.Windows.Forms.AnchorStyles.Left Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.btnExistingTaskChoiceAsFileTo_File.AutoSize = True
+        Me.btnExistingTaskChoiceAsFileTo_File.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
+        Me.btnExistingTaskChoiceAsFileTo_File.Location = New System.Drawing.Point(607, 3)
+        Me.btnExistingTaskChoiceAsFileTo_File.Name = "btnExistingTaskChoiceAsFileTo_File"
+        Me.btnExistingTaskChoiceAsFileTo_File.Size = New System.Drawing.Size(89, 23)
+        Me.btnExistingTaskChoiceAsFileTo_File.TabIndex = 18
+        Me.btnExistingTaskChoiceAsFileTo_File.Text = "Choose Task"
+        Me.btnExistingTaskChoiceAsFileTo_File.UseVisualStyleBackColor = True
+        '
+        'lbTotalPartners
+        '
+        Me.lbTotalPartners.BackColor = System.Drawing.SystemColors.ControlLight
+        Me.TableLayoutPanelFileToDocLibrary.SetColumnSpan(Me.lbTotalPartners, 2)
+        Me.lbTotalPartners.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.lbTotalPartners.FormattingEnabled = True
+        Me.lbTotalPartners.Location = New System.Drawing.Point(327, 61)
+        Me.lbTotalPartners.Name = "lbTotalPartners"
+        Me.TableLayoutPanelFileToDocLibrary.SetRowSpan(Me.lbTotalPartners, 2)
+        Me.lbTotalPartners.SelectionMode = System.Windows.Forms.SelectionMode.None
+        Me.lbTotalPartners.Size = New System.Drawing.Size(274, 52)
+        Me.lbTotalPartners.TabIndex = 19
         '
         'TabFileAsTask
         '
@@ -274,7 +289,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.TabFileAsTask.Location = New System.Drawing.Point(4, 22)
         Me.TabFileAsTask.Name = "TabFileAsTask"
         Me.TabFileAsTask.Padding = New System.Windows.Forms.Padding(3)
-        Me.TabFileAsTask.Size = New System.Drawing.Size(705, 116)
+        Me.TabFileAsTask.Size = New System.Drawing.Size(705, 118)
         Me.TabFileAsTask.TabIndex = 1
         Me.TabFileAsTask.Text = "File to Task As Item"
         '
@@ -294,7 +309,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.TableLayoutPanelFileToTaskAsItem.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.TableLayoutPanelFileToTaskAsItem.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.TableLayoutPanelFileToTaskAsItem.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20.0!))
-        Me.TableLayoutPanelFileToTaskAsItem.Size = New System.Drawing.Size(699, 110)
+        Me.TableLayoutPanelFileToTaskAsItem.Size = New System.Drawing.Size(699, 112)
         Me.TableLayoutPanelFileToTaskAsItem.TabIndex = 0
         '
         'btnExistingTaskChoiceAsFileTo
@@ -345,7 +360,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.TabCreateTask.Controls.Add(Me.TableLayoutPanelCreateNewTask)
         Me.TabCreateTask.Location = New System.Drawing.Point(4, 22)
         Me.TabCreateTask.Name = "TabCreateTask"
-        Me.TabCreateTask.Size = New System.Drawing.Size(705, 116)
+        Me.TabCreateTask.Size = New System.Drawing.Size(705, 118)
         Me.TabCreateTask.TabIndex = 2
         Me.TabCreateTask.Text = "Create New Task"
         '
@@ -366,7 +381,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20.0!))
-        Me.TableLayoutPanelCreateNewTask.Size = New System.Drawing.Size(705, 116)
+        Me.TableLayoutPanelCreateNewTask.Size = New System.Drawing.Size(705, 118)
         Me.TableLayoutPanelCreateNewTask.TabIndex = 0
         '
         'cbTaskChosenHistoryNewTask
@@ -393,22 +408,24 @@ Partial Class HUI_TaskDocFormRegion
         'btnHistoryChosenAsTemplateForNewTask
         '
         Me.btnHistoryChosenAsTemplateForNewTask.AutoSize = True
+        Me.btnHistoryChosenAsTemplateForNewTask.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
         Me.btnHistoryChosenAsTemplateForNewTask.Location = New System.Drawing.Point(162, 30)
         Me.btnHistoryChosenAsTemplateForNewTask.Name = "btnHistoryChosenAsTemplateForNewTask"
-        Me.btnHistoryChosenAsTemplateForNewTask.Size = New System.Drawing.Size(197, 23)
+        Me.btnHistoryChosenAsTemplateForNewTask.Size = New System.Drawing.Size(149, 23)
         Me.btnHistoryChosenAsTemplateForNewTask.TabIndex = 3
-        Me.btnHistoryChosenAsTemplateForNewTask.Text = "Use chosen previous task as template"
+        Me.btnHistoryChosenAsTemplateForNewTask.Text = "Use task above as template"
         Me.btnHistoryChosenAsTemplateForNewTask.UseVisualStyleBackColor = True
         '
         'btnExistingTaskChoiceAsTemplateForNewTask
         '
         Me.btnExistingTaskChoiceAsTemplateForNewTask.AutoSize = True
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
         Me.TableLayoutPanelCreateNewTask.SetColumnSpan(Me.btnExistingTaskChoiceAsTemplateForNewTask, 2)
         Me.btnExistingTaskChoiceAsTemplateForNewTask.Location = New System.Drawing.Point(3, 59)
         Me.btnExistingTaskChoiceAsTemplateForNewTask.Name = "btnExistingTaskChoiceAsTemplateForNewTask"
-        Me.btnExistingTaskChoiceAsTemplateForNewTask.Size = New System.Drawing.Size(287, 23)
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.Size = New System.Drawing.Size(259, 23)
         Me.btnExistingTaskChoiceAsTemplateForNewTask.TabIndex = 1
-        Me.btnExistingTaskChoiceAsTemplateForNewTask.Text = "Choose existing task as template for template to new task"
+        Me.btnExistingTaskChoiceAsTemplateForNewTask.Text = "Choose other existing task as template for new task"
         Me.btnExistingTaskChoiceAsTemplateForNewTask.UseVisualStyleBackColor = True
         '
         'TableLayoutPanelTop
@@ -427,7 +444,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.TableLayoutPanelTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.TableLayoutPanelTop.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30.0!))
         Me.TableLayoutPanelTop.RowStyles.Add(New System.Windows.Forms.RowStyle())
-        Me.TableLayoutPanelTop.Size = New System.Drawing.Size(719, 205)
+        Me.TableLayoutPanelTop.Size = New System.Drawing.Size(719, 207)
         Me.TableLayoutPanelTop.TabIndex = 1
         '
         'cbFileEmailOrAttachments
@@ -465,7 +482,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.Controls.Add(Me.TableLayoutPanelTop)
         Me.Name = "HUI_TaskDocFormRegion"
-        Me.Size = New System.Drawing.Size(719, 205)
+        Me.Size = New System.Drawing.Size(719, 207)
         Me.TabControl1.ResumeLayout(False)
         Me.TabFileAsDoc.ResumeLayout(False)
         Me.TableLayoutPanelFileToDocLibrary.ResumeLayout(False)
@@ -541,11 +558,12 @@ Partial Class HUI_TaskDocFormRegion
     Friend WithEvents tbPathToSaveTo As Windows.Forms.TextBox
 
     Friend WithEvents btnAddPartnerFile As Windows.Forms.Button
-    Friend WithEvents tbPartnersTotal As Windows.Forms.TextBox
     Friend WithEvents btnDeleteLastPartner As Windows.Forms.Button
 
     Friend WithEvents btnPartnerQryMailBody As Windows.Forms.Button
     Friend WithEvents btnFileToDocLibrary As Windows.Forms.Button
+    Friend WithEvents btnExistingTaskChoiceAsFileTo_File As Windows.Forms.Button
+    Friend WithEvents lbTotalPartners As Windows.Forms.ListBox
 
     Partial Public Class HUI_TaskDocFormRegionFactory
         Implements Microsoft.Office.Tools.Outlook.IFormRegionFactory
