@@ -34,7 +34,6 @@ Partial Class HUI_TaskDocFormRegion
         Me.cbMatter = New System.Windows.Forms.ComboBox()
         Me.tbPathToSaveTo = New System.Windows.Forms.TextBox()
         Me.btnOpenFolder = New System.Windows.Forms.Button()
-        Me.cbFolderTypeToUse = New System.Windows.Forms.ComboBox()
         Me.Label6 = New System.Windows.Forms.Label()
         Me.cbPartner = New System.Windows.Forms.ComboBox()
         Me.btnAddPartnerFile = New System.Windows.Forms.Button()
@@ -43,6 +42,8 @@ Partial Class HUI_TaskDocFormRegion
         Me.btnFileToDocLibrary = New System.Windows.Forms.Button()
         Me.btnExistingTaskChoiceAsFileTo_File = New System.Windows.Forms.Button()
         Me.lbTotalPartners = New System.Windows.Forms.ListBox()
+        Me.btnCreateFolderIfNotExisting = New System.Windows.Forms.Button()
+        Me.btnChangePartnerOrder = New System.Windows.Forms.Button()
         Me.TabFileAsTask = New System.Windows.Forms.TabPage()
         Me.TableLayoutPanelFileToTaskAsItem = New System.Windows.Forms.TableLayoutPanel()
         Me.btnExistingTaskChoiceAsFileTo = New System.Windows.Forms.Button()
@@ -59,6 +60,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.cbFileEmailOrAttachments = New System.Windows.Forms.ComboBox()
         Me.tbTitleFile = New System.Windows.Forms.TextBox()
         Me.Label1 = New System.Windows.Forms.Label()
+        Me.btnCreateNewTask = New System.Windows.Forms.Button()
         Me.TabControl1.SuspendLayout()
         Me.TabFileAsDoc.SuspendLayout()
         Me.TableLayoutPanelFileToDocLibrary.SuspendLayout()
@@ -110,7 +112,6 @@ Partial Class HUI_TaskDocFormRegion
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.cbMatter, 1, 1)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.tbPathToSaveTo, 2, 1)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnOpenFolder, 4, 1)
-        Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.cbFolderTypeToUse, 5, 1)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.Label6, 0, 2)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.cbPartner, 1, 2)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnAddPartnerFile, 2, 2)
@@ -119,6 +120,8 @@ Partial Class HUI_TaskDocFormRegion
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnFileToDocLibrary, 1, 3)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnExistingTaskChoiceAsFileTo_File, 5, 0)
         Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.lbTotalPartners, 3, 2)
+        Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnCreateFolderIfNotExisting, 5, 1)
+        Me.TableLayoutPanelFileToDocLibrary.Controls.Add(Me.btnChangePartnerOrder, 2, 3)
         Me.TableLayoutPanelFileToDocLibrary.Dock = System.Windows.Forms.DockStyle.Fill
         Me.TableLayoutPanelFileToDocLibrary.Location = New System.Drawing.Point(3, 3)
         Me.TableLayoutPanelFileToDocLibrary.Name = "TableLayoutPanelFileToDocLibrary"
@@ -190,16 +193,6 @@ Partial Class HUI_TaskDocFormRegion
         Me.btnOpenFolder.TabIndex = 9
         Me.btnOpenFolder.Text = "Open Folder"
         Me.btnOpenFolder.UseVisualStyleBackColor = True
-        '
-        'cbFolderTypeToUse
-        '
-        Me.cbFolderTypeToUse.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.cbFolderTypeToUse.FormattingEnabled = True
-        Me.cbFolderTypeToUse.Items.AddRange(New Object() {"Default", "Partner", "WorkDocType", "NonWorkDocType", "ProjectOrSystem", "FirstKeyWord"})
-        Me.cbFolderTypeToUse.Location = New System.Drawing.Point(607, 32)
-        Me.cbFolderTypeToUse.Name = "cbFolderTypeToUse"
-        Me.cbFolderTypeToUse.Size = New System.Drawing.Size(89, 21)
-        Me.cbFolderTypeToUse.TabIndex = 10
         '
         'Label6
         '
@@ -281,6 +274,28 @@ Partial Class HUI_TaskDocFormRegion
         Me.lbTotalPartners.SelectionMode = System.Windows.Forms.SelectionMode.None
         Me.lbTotalPartners.Size = New System.Drawing.Size(274, 52)
         Me.lbTotalPartners.TabIndex = 19
+        '
+        'btnCreateFolderIfNotExisting
+        '
+        Me.btnCreateFolderIfNotExisting.Anchor = CType((System.Windows.Forms.AnchorStyles.Left Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.btnCreateFolderIfNotExisting.AutoSize = True
+        Me.btnCreateFolderIfNotExisting.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
+        Me.btnCreateFolderIfNotExisting.Location = New System.Drawing.Point(607, 32)
+        Me.btnCreateFolderIfNotExisting.Name = "btnCreateFolderIfNotExisting"
+        Me.btnCreateFolderIfNotExisting.Size = New System.Drawing.Size(89, 23)
+        Me.btnCreateFolderIfNotExisting.TabIndex = 20
+        Me.btnCreateFolderIfNotExisting.Text = "Create Folder"
+        Me.btnCreateFolderIfNotExisting.UseVisualStyleBackColor = True
+        '
+        'btnChangePartnerOrder
+        '
+        Me.btnChangePartnerOrder.Font = New System.Drawing.Font("Segoe UI Symbol", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.btnChangePartnerOrder.Location = New System.Drawing.Point(302, 90)
+        Me.btnChangePartnerOrder.Name = "btnChangePartnerOrder"
+        Me.btnChangePartnerOrder.Size = New System.Drawing.Size(19, 23)
+        Me.btnChangePartnerOrder.TabIndex = 21
+        Me.btnChangePartnerOrder.Text = "↺"
+        Me.btnChangePartnerOrder.UseVisualStyleBackColor = True
         '
         'TabFileAsTask
         '
@@ -373,13 +388,15 @@ Partial Class HUI_TaskDocFormRegion
         Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.Label2, 0, 0)
         Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnHistoryChosenAsTemplateForNewTask, 1, 1)
         Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnExistingTaskChoiceAsTemplateForNewTask, 0, 2)
+        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnCreateNewTask, 0, 3)
         Me.TableLayoutPanelCreateNewTask.Dock = System.Windows.Forms.DockStyle.Fill
         Me.TableLayoutPanelCreateNewTask.Location = New System.Drawing.Point(0, 0)
         Me.TableLayoutPanelCreateNewTask.Name = "TableLayoutPanelCreateNewTask"
-        Me.TableLayoutPanelCreateNewTask.RowCount = 3
+        Me.TableLayoutPanelCreateNewTask.RowCount = 4
         Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
         Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle())
+        Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20.0!))
         Me.TableLayoutPanelCreateNewTask.RowStyles.Add(New System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20.0!))
         Me.TableLayoutPanelCreateNewTask.Size = New System.Drawing.Size(705, 118)
         Me.TableLayoutPanelCreateNewTask.TabIndex = 0
@@ -389,10 +406,10 @@ Partial Class HUI_TaskDocFormRegion
         Me.cbTaskChosenHistoryNewTask.Dock = System.Windows.Forms.DockStyle.Fill
         Me.cbTaskChosenHistoryNewTask.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.cbTaskChosenHistoryNewTask.FormattingEnabled = True
-        Me.cbTaskChosenHistoryNewTask.Location = New System.Drawing.Point(162, 3)
+        Me.cbTaskChosenHistoryNewTask.Location = New System.Drawing.Point(165, 3)
         Me.cbTaskChosenHistoryNewTask.MaxDropDownItems = 20
         Me.cbTaskChosenHistoryNewTask.Name = "cbTaskChosenHistoryNewTask"
-        Me.cbTaskChosenHistoryNewTask.Size = New System.Drawing.Size(540, 21)
+        Me.cbTaskChosenHistoryNewTask.Size = New System.Drawing.Size(537, 21)
         Me.cbTaskChosenHistoryNewTask.TabIndex = 0
         '
         'Label2
@@ -409,7 +426,7 @@ Partial Class HUI_TaskDocFormRegion
         '
         Me.btnHistoryChosenAsTemplateForNewTask.AutoSize = True
         Me.btnHistoryChosenAsTemplateForNewTask.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
-        Me.btnHistoryChosenAsTemplateForNewTask.Location = New System.Drawing.Point(162, 30)
+        Me.btnHistoryChosenAsTemplateForNewTask.Location = New System.Drawing.Point(165, 30)
         Me.btnHistoryChosenAsTemplateForNewTask.Name = "btnHistoryChosenAsTemplateForNewTask"
         Me.btnHistoryChosenAsTemplateForNewTask.Size = New System.Drawing.Size(149, 23)
         Me.btnHistoryChosenAsTemplateForNewTask.TabIndex = 3
@@ -475,6 +492,17 @@ Partial Class HUI_TaskDocFormRegion
         Me.Label1.Size = New System.Drawing.Size(64, 13)
         Me.Label1.TabIndex = 2
         Me.Label1.Text = "Title (Name)"
+        '
+        'btnCreateNewTask
+        '
+        Me.btnCreateNewTask.AutoSize = True
+        Me.btnCreateNewTask.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
+        Me.btnCreateNewTask.Location = New System.Drawing.Point(3, 88)
+        Me.btnCreateNewTask.Name = "btnCreateNewTask"
+        Me.btnCreateNewTask.Size = New System.Drawing.Size(156, 23)
+        Me.btnCreateNewTask.TabIndex = 4
+        Me.btnCreateNewTask.Text = "Create new task with this mail"
+        Me.btnCreateNewTask.UseVisualStyleBackColor = True
         '
         'HUI_TaskDocFormRegion
         '
@@ -550,8 +578,6 @@ Partial Class HUI_TaskDocFormRegion
     Friend WithEvents cbMatter As Windows.Forms.ComboBox
 
     Friend WithEvents btnOpenFolder As Windows.Forms.Button
-
-    Friend WithEvents cbFolderTypeToUse As Windows.Forms.ComboBox
     Friend WithEvents Label6 As Windows.Forms.Label
 
     Friend WithEvents cbPartner As Windows.Forms.ComboBox
@@ -564,6 +590,9 @@ Partial Class HUI_TaskDocFormRegion
     Friend WithEvents btnFileToDocLibrary As Windows.Forms.Button
     Friend WithEvents btnExistingTaskChoiceAsFileTo_File As Windows.Forms.Button
     Friend WithEvents lbTotalPartners As Windows.Forms.ListBox
+    Friend WithEvents btnCreateFolderIfNotExisting As Windows.Forms.Button
+    Friend WithEvents btnChangePartnerOrder As Windows.Forms.Button
+    Friend WithEvents btnCreateNewTask As Windows.Forms.Button
 
     Partial Public Class HUI_TaskDocFormRegionFactory
         Implements Microsoft.Office.Tools.Outlook.IFormRegionFactory
