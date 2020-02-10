@@ -1,5 +1,6 @@
 ﻿Imports System.Diagnostics
 Imports System.Windows.Forms
+Imports Microsoft.Office.Interop.Outlook
 Imports SPHelper.SPHUI
 
 Public Class HUI_TaskDocFormRegion
@@ -24,13 +25,22 @@ Public Class HUI_TaskDocFormRegion
     Property ShowAllPartners As Boolean
     Property TaskTreeView As TreeView
     Property CurrentMail As Outlook.MailItem
+    Enum AttachmentIndex
+        FullEmail = 254
+        EmailWithoutAttachment = 255
+    End Enum
 
     'Occurs before the form region is displayed. 
     'Use Me.OutlookItem to get a reference to the current Outlook item.
     'Use Me.OutlookFormRegion to get a reference to the form region.
     Private Sub HUI_TaskDocFormRegion_FormRegionShowing(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionShowing
         'Feltölti a három cb-t értékekkel, mindhárom cb értéke azonos, csak a Taskból és a body-ból veszi ki a history-t
-        LoadValuesIntocbTaskChosen({cbTaskChosenHistoryNewTask, cbTaskChosenHistoryFileTask, cbFileHistory})
+        CurrentMail = TryCast(Me.OutlookItem, MailItem)
+        If IsNothing(CurrentMail) Then Exit Sub
+        If OutlookApplicationHelper.IsNewAndEmpty(CurrentMail) Then Exit Sub
+
+        LoadAttachmentNames(CurrentMail)
+        LoadValuesIntocbTaskChosen({cbTaskChosenHistoryNewTask, cbTaskChosenHistoryFileTask, cbFileHistory}, CurrentMail)
         LoadValuesIncbMattersAllActive()
         LoadValuesIncbPartnersAllActive()
     End Sub
@@ -42,11 +52,10 @@ Public Class HUI_TaskDocFormRegion
     Private Sub HUI_TaskDocFormRegion_FormRegionClosed(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionClosed
 
     End Sub
-    Private Sub LoadValuesIntocbTaskChosen(cbControls As IEnumerable(Of ComboBox))
-        CurrentMail = GetSelectedMailItem(Globals.ThisAddIn.Application)
-        If Not IsNothing(CurrentMail) AndAlso Not IsNothing(CurrentMail.ConversationID) Then
-            Dim ResultFromConversationID As List(Of TaskClass) = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ConversationID = CurrentMail.ConversationID).ToList
-            Dim ResultFromBody As List(Of TaskClass) = GetTaskClassesFromMailBody(CurrentMail)
+    Private Sub LoadValuesIntocbTaskChosen(cbControls As IEnumerable(Of ComboBox), currentMail As MailItem)
+        If Not IsNothing(currentMail) AndAlso Not IsNothing(currentMail.ConversationID) Then
+            Dim ResultFromConversationID As List(Of TaskClass) = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ConversationID = currentMail.ConversationID).ToList
+            Dim ResultFromBody As List(Of TaskClass) = GetTaskClassesFromMailBody(currentMail)
             For Each comboBox In cbControls
                 comboBox.DisplayMember = "TitleOrTaskName"
                 comboBox.ValueMember = "ID"
@@ -64,10 +73,24 @@ Public Class HUI_TaskDocFormRegion
     Private Sub LoadValuesIncbPartnersAllActive()
         cbPartner.DisplayMember = "Title"
         cbPartner.ValueMember = "ID"
-        cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Active = True).ToArray)
         lbTotalPartners.DisplayMember = "Title"
         lbTotalPartners.ValueMember = "ID"
+        cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Active = True).ToArray)
     End Sub
+
+    Private Sub LoadAttachmentNames(currentMail As MailItem)
+        Dim AttachmentNames = GetAllAttachmentDisplayNames(currentMail)
+        Dim FullEmail As New OutlookItemAttachment With
+            {.DisplayName = "The full email (including attachments)", .ID = AttachmentIndex.FullEmail}
+        Dim EmailWithoutAttachment As New OutlookItemAttachment With
+            {.DisplayName = "The email without attachments", .ID = AttachmentIndex.EmailWithoutAttachment}
+        cbFileEmailOrAttachments.DisplayMember = "DisplayName"
+        cbFileEmailOrAttachments.ValueMember = "ID"
+        cbFileEmailOrAttachments.Items.AddRange({FullEmail, EmailWithoutAttachment})
+        cbFileEmailOrAttachments.Items.AddRange(GetAllAttachments(currentMail).ToArray)
+        cbFileEmailOrAttachments.SelectedItem = FullEmail
+    End Sub
+
 #Region "CreateNewTask"
 
     Private Sub btnHistoryChosenAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnHistoryChosenAsTemplateForNewTask.Click
@@ -147,8 +170,17 @@ Public Class HUI_TaskDocFormRegion
     End Sub
 
     Private Sub btnFileToDocLibrary_Click(sender As Object, e As EventArgs) Handles btnFileToDocLibrary.Click
-        '#Mentse le az itemet a kiválasztott matter és partner metaadatokkal.
-        'Ha volt korábbi task kiválasztva a cbFileHistory-ban, akkor fűzze hozzá a taskhoz related item-ként az új itemet
+        Dim SavedFileName As String = String.Empty
+        If IsNothing(cbFileEmailOrAttachments.SelectedItem) OrElse cbFileEmailOrAttachments.SelectedItem.ID = AttachmentIndex.FullEmail Then
+            SavedFileName = GetMailwAttachmentsIncludedAsFile(CurrentMail)
+        ElseIf cbFileEmailOrAttachments.SelectedItem.ID = AttachmentIndex.EmailWithoutAttachment Then
+            SavedFileName = GetMailWOAttachmentsAsFile(CurrentMail)
+        Else
+            Dim AttachmentSelected As OutlookItemAttachment = cbFileEmailOrAttachments.SelectedItem
+            SavedFileName = GetMailAttachmentWOMailAsFile(CurrentMail, AttachmentSelected.ID)
+        End If
+        '#Mentse le az itemet a title, kiválasztott matter és partner metaadatokkal.
+        '#Ha volt korábbi task kiválasztva a cbFileHistory-ban, akkor fűzze hozzá a taskhoz related item-ként az új itemet
     End Sub
 
 #End Region

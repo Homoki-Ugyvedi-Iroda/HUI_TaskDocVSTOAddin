@@ -5,11 +5,19 @@ Imports System.Runtime.InteropServices
 Imports System.Text.RegularExpressions
 Imports Microsoft.Office.Interop.Outlook
 Imports SPHelper.SPHUI
+Imports SPHelper.SPFileFolder
 
 Module OutlookApplicationHelper
     Public Const Separator = "|"
     Public Const MAPINameSpaceGUID = "http://schemas.microsoft.com/mapi/string/{89465200-caac-429e-931d-6888323b7279}/"
     Public Const PR_SMTP_ADDRESS As String = "http://schemas.microsoft.com/mapi/proptag/0x39FE001E"
+
+    Public Class OutlookItemAttachment
+        Property ID As Integer
+        Property FileName As String
+        Property DisplayName As String
+        Property Size As Integer
+    End Class
 
     Friend Function ConvertPriorityFromSp(InputChoice As String) As OlImportance
         Dim result As New OlImportance
@@ -116,15 +124,23 @@ Module OutlookApplicationHelper
         End If
         Return String.Empty
     End Function
+
+    ''' <summary>
+    ''' Visszajelzi, hogy az adott MailItem új tétel-e vagy beérkezett, elküldött stb. email
+    ''' </summary>
+    ''' <returns>True = új, False = nem új, hanem beérkezett/elküldött email (létező item)</returns>
     <Extension>
     Friend Function IsNewAndEmpty(ByVal selected As MailItem) As Boolean
         If String.IsNullOrWhiteSpace(selected.Subject) AndAlso String.IsNullOrWhiteSpace(selected.To) Then Return True Else Return False
     End Function
+
     ''' <summary>
     ''' Először ActiveInspectorban lévő MailItemet küldi vissza (?), ha ez üres, akkor az InlineResponse szerint nyitott emailt, és ha ez is üres, akkor az ActiveExplorerben kijelölt első MailItemet
     ''' </summary>
     ''' <param name="application"></param>
     ''' <returns>A kijelölt MailItem</returns>
+    ''' Egyszerűsíthető, ha Me.OutlookItem-et küldjük neki inkább?
+
     <Extension>
     Friend Function GetSelectedMailItem(ByVal application As Outlook.Application) As MailItem
         Dim ActiveInspectorCurrentItem = Nothing
@@ -206,6 +222,120 @@ Module OutlookApplicationHelper
         Dim listofmatches As List(Of Match) = input.Cast(Of Match).ToList
         Return listofmatches.Select(Function(m) m.Value).ToList
     End Function
-
 #End Region
+#Region "Handling saving attachments and mail"
+    Public Function GetAllAttachmentNames(sourceMailItem As MailItem) As List(Of String)
+        Dim result As New List(Of String)
+        For Each att As Microsoft.Office.Interop.Outlook.Attachment In sourceMailItem.Attachments
+            result.Add(GetAttachmentName(att))
+        Next
+        Return result
+    End Function
+   
+    Private Function IsThisLogo(attachment As Microsoft.Office.Interop.Outlook.Attachment)
+        If attachment.FileName.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) AndAlso attachment.Size < 25 * 1024 AndAlso
+                (attachment.FileName.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase) Or
+                attachment.FileName.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase) Or attachment.FileName.EndsWith(".gif")) Then Return True
+        Return False
+    End Function
+    ''' <summary>
+    ''' Retrieves only the file names of all attachments of a MailItem
+    ''' 
+    ''' </summary>
+    ''' <param name="mailItem"></param>
+    ''' <returns>A list of Strings containing the filenames of the attachments.</returns>
+    Public Function GetFileNamesFromAttachmentAsList(mailItem As MailItem) As List(Of String)
+        Dim filenames As New List(Of String)
+        Dim MailAttachments = mailItem.Attachments
+        For Each fname As Outlook.Attachment In mailItem.Attachments
+            filenames.Add(fname.FileName)
+        Next
+        Return filenames
+    End Function
+    ''' <summary>
+    ''' Returns all those attachments that should be saved (that is, excludes small images typical for signatures).
+    ''' </summary>
+    ''' <param name="_MailItem">The mail item.</param>
+    ''' <returns></returns>
+    Public Function GetAllAttachmentDisplayNames(_MailItem As MailItem) As List(Of String)
+        If IsNothing(_MailItem) Then Return Nothing
+        Dim result As New List(Of String)
+        For Each att As Microsoft.Office.Interop.Outlook.Attachment In _MailItem.Attachments
+            If Not IsThisLogo(att) Then result.Add(att.DisplayName)
+        Next
+        Return result
+    End Function
+
+    ''' <summary>
+    ''' Returns all those attachments that should be saved (that is, excludes small images typical for signatures).
+    ''' </summary>
+    ''' <param name="_MailItem">The mail item.</param>
+    ''' <returns></returns>
+    Public Function GetAllAttachments(_MailItem As MailItem) As List(Of OutlookItemAttachment)
+        If IsNothing(_MailItem) Then Return Nothing
+        Dim result As New List(Of OutlookItemAttachment)
+        For Each att As Microsoft.Office.Interop.Outlook.Attachment In _MailItem.Attachments
+            If Not IsThisLogo(att) Then result.Add(New OutlookItemAttachment With
+                                                   {.FileName = att.FileName, .ID = att.Index, .DisplayName = att.DisplayName, .Size = att.Size})
+        Next
+        Return result
+    End Function
+    ''' <summary>
+    ''' Retrieves the filename (or if there is no filename, a displayname) for a given attachment in an Outlook Item Attachment
+    ''' </summary>
+    ''' <param name="item">An Attachment</param>
+    ''' <returns>The filename or displayname of a given attachment.</returns>
+    Public Function GetAttachmentName(item As Microsoft.Office.Interop.Outlook.Attachment) As String
+        GetAttachmentName = item.FileName
+        If String.IsNullOrWhiteSpace(GetAttachmentName) Then GetAttachmentName = item.DisplayName
+        Return ValidateFileName(GetAttachmentName)
+    End Function
+    ''' <summary>
+    ''' Csak magát az emailt, csatolmányok nélkül mentse le egy ideiglenes könyvtárba, és adja vissza egy útvonalként azt, ahova lementette azt.
+    ''' </summary>
+    ''' <param name="mailItem">Az email, amit le kell menteni csatolmány nélkül HTML formában (.mht)</param>
+    ''' <returns>Az útvonala annak a fájlnak, ahova lementette a MailItem-et mht formában</returns>
+    Public Function GetMailWOAttachmentsAsFile(mailItem As MailItem) As String
+        If IsNothing(mailItem) Then Return Nothing
+        Dim fname = Path.Combine(Globals.ThisAddIn.TempPath, GetValidatedMailNameWOExtensionAsFile(mailItem) & ".mht")
+        If IO.File.Exists(fname) Then IO.File.Delete(fname)
+        mailItem.SaveAs(fname, OlSaveAsType.olMHTML)
+        Marshal.ReleaseComObject(mailItem)
+        mailItem = Nothing
+        Return fname
+    End Function
+    ''' <summary>
+    ''' A csatolmányokkal együtt az emailt magát is mentse le MSG-ként egy ideiglenes könyvtárba, és adjon egy útvonalat arra, hogy hova mentette.
+    ''' </summary>
+    ''' <param name="mailItem">Az email, amit le kell menteni csatolmányokkal együtt, msg formában (.msg)</param>
+    ''' <returns></returns>
+    Public Function GetMailwAttachmentsIncludedAsFile(mailItem As MailItem) As String
+        If IsNothing(mailItem) Then Return Nothing
+        Dim fname = Path.Combine(Globals.ThisAddIn.TempPath) & GetValidatedMailNameWOExtensionAsFile(mailItem) & ".msg"
+        mailItem.SaveAs(fname, OlSaveAsType.olMSG)
+        Marshal.ReleaseComObject(mailItem)
+        mailItem = Nothing
+        Return fname
+    End Function
+    ''' <summary>
+    ''' Gets the mail attachments without the mail itself as string of files saved into a temporary directory.
+    ''' </summary>
+    ''' <returns></returns>
+    Public Function GetMailAttachmentWOMailAsFile(mailItem As MailItem, indexOfAttachmentToSave As Integer) As String
+        If IsNothing(mailItem) Then Return Nothing
+        Dim MailAttachments = mailItem.Attachments
+        Dim ListofAttachmentFullPathinTemp As New List(Of String)
+        Dim fname = Path.Combine(Globals.ThisAddIn.TempPath, GetAttachmentName(MailAttachments(indexOfAttachmentToSave)))
+        If IO.File.Exists(fname) Then IO.File.Delete(fname)
+        MailAttachments(indexOfAttachmentToSave).SaveAsFile(fname)
+        Marshal.ReleaseComObject(MailAttachments)
+        MailAttachments = Nothing
+        Return fname
+    End Function
+    Public Function GetValidatedMailNameWOExtensionAsFile(_MailItem As MailItem) As String
+        If IsNothing(_MailItem) Then Return Nothing
+        Return ValidateFileName(_MailItem.Subject & "_" & HPHelper.StringRelated.RandomCharGet(4))
+    End Function
+#End Region
+
 End Module

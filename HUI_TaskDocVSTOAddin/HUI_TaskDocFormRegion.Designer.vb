@@ -56,11 +56,11 @@ Partial Class HUI_TaskDocFormRegion
         Me.Label2 = New System.Windows.Forms.Label()
         Me.btnHistoryChosenAsTemplateForNewTask = New System.Windows.Forms.Button()
         Me.btnExistingTaskChoiceAsTemplateForNewTask = New System.Windows.Forms.Button()
+        Me.btnCreateNewTask = New System.Windows.Forms.Button()
         Me.TableLayoutPanelTop = New System.Windows.Forms.TableLayoutPanel()
         Me.cbFileEmailOrAttachments = New System.Windows.Forms.ComboBox()
         Me.tbTitleFile = New System.Windows.Forms.TextBox()
         Me.Label1 = New System.Windows.Forms.Label()
-        Me.btnCreateNewTask = New System.Windows.Forms.Button()
         Me.TabControl1.SuspendLayout()
         Me.TabFileAsDoc.SuspendLayout()
         Me.TableLayoutPanelFileToDocLibrary.SuspendLayout()
@@ -445,6 +445,17 @@ Partial Class HUI_TaskDocFormRegion
         Me.btnExistingTaskChoiceAsTemplateForNewTask.Text = "Choose other existing task as template for new task"
         Me.btnExistingTaskChoiceAsTemplateForNewTask.UseVisualStyleBackColor = True
         '
+        'btnCreateNewTask
+        '
+        Me.btnCreateNewTask.AutoSize = True
+        Me.btnCreateNewTask.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
+        Me.btnCreateNewTask.Location = New System.Drawing.Point(3, 88)
+        Me.btnCreateNewTask.Name = "btnCreateNewTask"
+        Me.btnCreateNewTask.Size = New System.Drawing.Size(156, 23)
+        Me.btnCreateNewTask.TabIndex = 4
+        Me.btnCreateNewTask.Text = "Create new task with this mail"
+        Me.btnCreateNewTask.UseVisualStyleBackColor = True
+        '
         'TableLayoutPanelTop
         '
         Me.TableLayoutPanelTop.ColumnCount = 2
@@ -470,7 +481,6 @@ Partial Class HUI_TaskDocFormRegion
         Me.cbFileEmailOrAttachments.Dock = System.Windows.Forms.DockStyle.Fill
         Me.cbFileEmailOrAttachments.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.cbFileEmailOrAttachments.FormattingEnabled = True
-        Me.cbFileEmailOrAttachments.Items.AddRange(New Object() {"The full email (including attachments)", "The email without attachments"})
         Me.cbFileEmailOrAttachments.Location = New System.Drawing.Point(3, 3)
         Me.cbFileEmailOrAttachments.Name = "cbFileEmailOrAttachments"
         Me.cbFileEmailOrAttachments.Size = New System.Drawing.Size(713, 21)
@@ -492,17 +502,6 @@ Partial Class HUI_TaskDocFormRegion
         Me.Label1.Size = New System.Drawing.Size(64, 13)
         Me.Label1.TabIndex = 2
         Me.Label1.Text = "Title (Name)"
-        '
-        'btnCreateNewTask
-        '
-        Me.btnCreateNewTask.AutoSize = True
-        Me.btnCreateNewTask.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
-        Me.btnCreateNewTask.Location = New System.Drawing.Point(3, 88)
-        Me.btnCreateNewTask.Name = "btnCreateNewTask"
-        Me.btnCreateNewTask.Size = New System.Drawing.Size(156, 23)
-        Me.btnCreateNewTask.TabIndex = 4
-        Me.btnCreateNewTask.Text = "Create new task with this mail"
-        Me.btnCreateNewTask.UseVisualStyleBackColor = True
         '
         'HUI_TaskDocFormRegion
         '
