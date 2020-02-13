@@ -216,6 +216,29 @@ Module OutlookApplicationHelper
         Next
         Return result
     End Function
+
+    Public Function GetMatterfromSenderData(_MailItem As MailItem) As List(Of MatterClass)
+        'Dim _MailItem = GetMailItemSelectedinActiveExplorer()
+        If IsNothing(_MailItem) Then Return Nothing
+        Dim result As New List(Of MatterClass)
+        Dim TextSenderMailAddress = _MailItem.SenderEmailAddress
+        Dim TextSenderMailDisplayName = _MailItem.SenderName
+        Dim senderregexps = Globals.ThisAddIn.Connection.Matters.Where(Function(x) x.SenderAddress <> String.Empty)
+        If String.IsNullOrWhiteSpace(TextSenderMailAddress) AndAlso Not String.IsNullOrWhiteSpace(TextSenderMailDisplayName) Then TextSenderMailAddress = TextSenderMailDisplayName
+        For Each matter In senderregexps
+            Dim RegexSplitArray = matter.SenderAddress.Split(";")
+            For Each RegexIndividual In RegexSplitArray
+                Dim regex As Regex = New Regex(RegexIndividual)
+                Dim match1 As Match = regex.Match(TextSenderMailAddress)
+                If match1.Success Then
+                    result.Add(matter)
+                    Continue For
+                End If
+            Next
+        Next
+        Return result
+    End Function
+
 #End Region
 #Region "Regexp Related Functions"
     Private Function MatchesToListofString(input As MatchCollection) As List(Of String)

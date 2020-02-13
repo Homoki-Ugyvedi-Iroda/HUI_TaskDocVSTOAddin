@@ -418,19 +418,20 @@ Partial Class HUI_TaskDocFormRegion
         Me.Label2.Location = New System.Drawing.Point(5, 5)
         Me.Label2.Margin = New System.Windows.Forms.Padding(5, 5, 5, 0)
         Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(149, 13)
+        Me.Label2.Size = New System.Drawing.Size(144, 13)
         Me.Label2.TabIndex = 2
-        Me.Label2.Text = "Use previous task as template"
+        Me.Label2.Text = "Use history tasks as template"
         '
         'btnHistoryChosenAsTemplateForNewTask
         '
         Me.btnHistoryChosenAsTemplateForNewTask.AutoSize = True
         Me.btnHistoryChosenAsTemplateForNewTask.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
+        Me.btnHistoryChosenAsTemplateForNewTask.Enabled = False
         Me.btnHistoryChosenAsTemplateForNewTask.Location = New System.Drawing.Point(165, 30)
         Me.btnHistoryChosenAsTemplateForNewTask.Name = "btnHistoryChosenAsTemplateForNewTask"
-        Me.btnHistoryChosenAsTemplateForNewTask.Size = New System.Drawing.Size(149, 23)
+        Me.btnHistoryChosenAsTemplateForNewTask.Size = New System.Drawing.Size(191, 23)
         Me.btnHistoryChosenAsTemplateForNewTask.TabIndex = 3
-        Me.btnHistoryChosenAsTemplateForNewTask.Text = "Use task above as template"
+        Me.btnHistoryChosenAsTemplateForNewTask.Text = "Use this task from history as template"
         Me.btnHistoryChosenAsTemplateForNewTask.UseVisualStyleBackColor = True
         '
         'btnExistingTaskChoiceAsTemplateForNewTask

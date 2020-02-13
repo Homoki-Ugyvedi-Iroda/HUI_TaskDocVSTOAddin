@@ -1,7 +1,10 @@
 ﻿Imports System.Diagnostics
+Imports System.IO
 Imports System.Windows.Forms
 Imports Microsoft.Office.Interop.Outlook
 Imports SPHelper.SPHUI
+Imports CSOM = Microsoft.SharePoint.Client
+
 
 Public Class HUI_TaskDocFormRegion
 
@@ -29,7 +32,11 @@ Public Class HUI_TaskDocFormRegion
         FullEmail = 254
         EmailWithoutAttachment = 255
     End Enum
-
+    Class HistoryItem
+        Property Matter As MatterClass
+        Property Partner As List(Of PersonClass)
+        Property Task As TaskClass
+    End Class
     'Occurs before the form region is displayed. 
     'Use Me.OutlookItem to get a reference to the current Outlook item.
     'Use Me.OutlookFormRegion to get a reference to the form region.
@@ -38,11 +45,12 @@ Public Class HUI_TaskDocFormRegion
         CurrentMail = TryCast(Me.OutlookItem, MailItem)
         If IsNothing(CurrentMail) Then Exit Sub
         If OutlookApplicationHelper.IsNewAndEmpty(CurrentMail) Then Exit Sub
-
+        tbTitleFile.Text = CurrentMail.Subject
         LoadAttachmentNames(CurrentMail)
         LoadValuesIntocbTaskChosen({cbTaskChosenHistoryNewTask, cbTaskChosenHistoryFileTask, cbFileHistory}, CurrentMail)
         LoadValuesIncbMattersAllActive()
         LoadValuesIncbPartnersAllActive()
+        LoadValuesInTaskChooser()
     End Sub
 
 
@@ -52,6 +60,12 @@ Public Class HUI_TaskDocFormRegion
     Private Sub HUI_TaskDocFormRegion_FormRegionClosed(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionClosed
 
     End Sub
+    Private Sub LoadValuesInTaskChooser()
+        Dim MySPTaxonomyTreeView As New SPTaxonomy_wWForms_TreeView.SPTreeview
+        Me.TaskTreeView = MySPTaxonomyTreeView.ShowNodeswithParents(Globals.ThisAddIn.Connection.Tasks, True)
+
+    End Sub
+
     Private Sub LoadValuesIntocbTaskChosen(cbControls As IEnumerable(Of ComboBox), currentMail As MailItem)
         If Not IsNothing(currentMail) AndAlso Not IsNothing(currentMail.ConversationID) Then
             Dim ResultFromConversationID As List(Of TaskClass) = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ConversationID = currentMail.ConversationID).ToList
@@ -68,6 +82,10 @@ Public Class HUI_TaskDocFormRegion
         cbMatter.DisplayMember = "Value"
         cbMatter.ValueMember = "ID"
         cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Matters.Where(Function(x) x.Active = True).ToArray)
+        Dim SelectedMatterFromSender = GetMatterfromSenderData(CurrentMail)
+        If Not IsNothing(SelectedMatterFromSender) AndAlso SelectedMatterFromSender.Count > 0 Then
+            cbMatter.SelectedItem = SelectedMatterFromSender.First
+        End If
     End Sub
 
     Private Sub LoadValuesIncbPartnersAllActive()
@@ -93,23 +111,48 @@ Public Class HUI_TaskDocFormRegion
 
 #Region "CreateNewTask"
 
-    Private Sub btnHistoryChosenAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnHistoryChosenAsTemplateForNewTask.Click
+    Private Async Sub btnHistoryChosenAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnHistoryChosenAsTemplateForNewTask.Click
         If IsNothing(cbTaskChosenHistoryNewTask.SelectedValue) Then Exit Sub
-        '#Mentse le egy új taskként a korábbi adataival, majd nyissa meg egy böngészőablakban az új taskot
+        Dim SavedFileName As String = ReturnSavedFileName()
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim DocLibrarytoUpload As CSOM.List = MySPHelper.Context.Web.Lists.GetByTitle(DocClass.ClientDocumentLibraryName)
+        MySPHelper.Context.Load(DocLibrarytoUpload)
+        MySPHelper.Context.Load(DocLibrarytoUpload, Function(dl) dl.ContentTypes, Function(dl) dl.ParentWeb.Id, Function(dl) dl.Id)
+        MySPHelper.Context.Load(DocLibrarytoUpload.RootFolder.Files)
+        MySPHelper.Context.Load(DocLibrarytoUpload.Fields)
+        Dim taxFieldEKW = MySPHelper.Context.CastTo(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField)(DocLibrarytoUpload.Fields.GetByInternalNameOrTitle("TaxKeyword"))
+        MySPHelper.Context.Load(taxFieldEKW)
+        MySPHelper.Context.ExecuteQuery()
+
+        Dim InterimDoc As DocClass = GetDocClassFromFileTab(SavedFileName)
+        Dim FileLeafTarget As String
+        Dim _ListItem As Microsoft.SharePoint.Client.ListItem
+        Using fstream As New FileStream(InterimDoc.FilePathLocalForUploading, FileMode.Open)
+            FileLeafTarget = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+            _ListItem = Await SPHelper.SaveToDocLibrary.SaveAndUploadAsync(Globals.ThisAddIn.Connection.Context, fstream, FileLeafTarget, DocLibrarytoUpload)
+            MySPHelper.SetListItemValuestoDocumentClassValues(_ListItem, InterimDoc, taxFieldEKW, taxFieldInternalDoc:=Nothing)
+        End Using
+        If IsTaskSelectedAsFileHistoryItem() Then
+            '#Ha volt korábbi task kiválasztva a cbFileHistory-ban, akkor fűzze hozzá a taskhoz related item-ként az új itemet
+            MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, ReturnTaskFromHistoryItem(cbTaskChosenHistoryNewTask).ID, FileLeafTarget)
+            'MySPHelper.SetRelatedItemForTask(MySPHelper.Context, ReturnTaskFromFilehistoryItem.ID, FileLeafTarget)
+        End If
+        '###Mentse le egy új taskként a korábbi adataival, majd nyissa meg egy böngészőablakban az új taskot!
     End Sub
 
     Private Sub btnExistingTaskChoiceAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsTemplateForNewTask.Click
-        '#feladatválasztó ablakot hívja meg
+        '#feladatválasztó ablakot hívja meg, újra gyártsa le a faszerkezetet, ha újat hozunk létre
     End Sub
 
     Private Sub btnCreateNewTask_Click(sender As Object, e As EventArgs) Handles btnCreateNewTask.Click
         '# létrehoz egy új üres taskot, amihez csatolja ezt az emailt/csatolmányt és annak megfelelő, SP szerinti új task ablak megnyitása? 
+        '#feladatválasztó ablakot hívja meg, újra gyártsa le a faszerkezetet, ha újat hozunk létre
     End Sub
 #End Region
 #Region "FileToDocLibrary"
     Private Function ReturnUrlToOpen() As String
-        Dim GetTargetUrlFolder = "/" & SPHelper.SPHUI.DocClass.ClientDocumentLibraryFileRef & "/" & tbPathToSaveTo.Text
-        Dim TargetLibrary = SPHelper.SPHUI.DocClass.ClientDocumentLibraryName
+        Dim GetTargetUrlFolder = "/" & DocClass.ClientDocumentLibraryFileRef & "/" & tbPathToSaveTo.Text
+        Dim TargetLibrary = DocClass.ClientDocumentLibraryName
         Dim URLToOpen = SPHelper.SPFileFolder.FilePathValidator(My.Settings.spUrl & GetTargetUrlFolder)
         Return URLToOpen
     End Function
@@ -131,10 +174,10 @@ Public Class HUI_TaskDocFormRegion
         End Try
     End Sub
     Private Sub btnCreateFolderIfNotExisting_Click(sender As Object, e As EventArgs) Handles btnCreateFolderIfNotExisting.Click
-        '#Ellenőrizze, hogy a tbPathToSaveTo létezik-e, és ha nem, hozza létre
         Dim TargetUrl = ReturnUrlToOpen()
+        'Ellenőrizze, hogy a tbPathToSaveTo létezik-e, és ha nem, hozza létre
         If SPHelper.SPFileFolder.TryGetFolderByServerRelativeUrl(Globals.ThisAddIn.Connection.Context, TargetUrl) Then Exit Sub
-        SPHelper.SPFileFolder.CreateFolder(Globals.ThisAddIn.Connection.Context.Web, SPHelper.SPHUI.DocClass.ClientDocumentLibraryName, TargetUrl)
+        SPHelper.SPFileFolder.CreateFolder(Globals.ThisAddIn.Connection.Context.Web, DocClass.ClientDocumentLibraryName, TargetUrl)
     End Sub
     Private Sub btnPartnerQryMailBody_Click(sender As Object, e As EventArgs) Handles btnPartnerQryMailBody.Click
         Dim PartnersToAdd As New List(Of PersonClass)
@@ -165,12 +208,83 @@ Public Class HUI_TaskDocFormRegion
         cbPartner.Items.Add(InterimItem)
         CheckIfPathChangesForPartnerChange(sender, e)
     End Sub
-    Private Sub btnExistingTaskChoiceAsFileTo_File_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsFileTo_File.Click
-        '#feladatválasztó ablakot hívja meg
+
+    Private Async Sub btnFileToDocLibrary_Click(sender As Object, e As EventArgs) Handles btnFileToDocLibrary.Click
+        Dim SavedFileName As String = ReturnSavedFileName()
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim DocLibrarytoUpload As CSOM.List = MySPHelper.Context.Web.Lists.GetByTitle(DocClass.ClientDocumentLibraryName)
+        MySPHelper.Context.Load(DocLibrarytoUpload)
+        MySPHelper.Context.Load(DocLibrarytoUpload, Function(dl) dl.ContentTypes, Function(dl) dl.ParentWeb.Id, Function(dl) dl.Id)
+        MySPHelper.Context.Load(DocLibrarytoUpload.RootFolder.Files)
+        MySPHelper.Context.Load(DocLibrarytoUpload.Fields)
+        Dim taxFieldEKW = MySPHelper.Context.CastTo(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField)(DocLibrarytoUpload.Fields.GetByInternalNameOrTitle("TaxKeyword"))
+        'nem kell, mivel InternalDoc nincsen mentve itt (tasknál nincsen):
+        '   Dim taxFieldInternalDoc = MySPHelper.Context.CastTo(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField)(DocLibrarytoUpload.Fields.GetByInternalNameOrTitle(InternalDocumentTypeColumnInternalName))
+        '   MySPHelper.Context.Load(taxFieldInternalDoc)
+        MySPHelper.Context.Load(taxFieldEKW)
+        MySPHelper.Context.ExecuteQuery()
+
+        Dim InterimDoc As DocClass = GetDocClassFromFileTab(SavedFileName)
+        Dim FileLeafTarget As String
+        Dim _ListItem As Microsoft.SharePoint.Client.ListItem
+        Using fstream As New FileStream(InterimDoc.FilePathLocalForUploading, FileMode.Open)
+            FileLeafTarget = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+            _ListItem = Await SPHelper.SaveToDocLibrary.SaveAndUploadAsync(Globals.ThisAddIn.Connection.Context, fstream, FileLeafTarget, DocLibrarytoUpload)
+            MySPHelper.SetListItemValuestoDocumentClassValues(_ListItem, InterimDoc, taxFieldEKW, taxFieldInternalDoc:=Nothing) ', KeywordsFile:=InterimDoc.Keywords)
+        End Using
+        If IsTaskSelectedAsFileHistoryItem() Then
+            '#Ha volt korábbi task kiválasztva a cbFileHistory-ban, akkor fűzze hozzá a taskhoz related item-ként az új itemet
+            MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, ReturnTaskFromHistoryItem(cbFileHistory).ID, FileLeafTarget)
+            'MySPHelper.SetRelatedItemForTask(MySPHelper.Context, ReturnTaskFromFilehistoryItem.ID, FileLeafTarget)
+        End If
+        AddToHistoryFromFileAndClear()
     End Sub
 
-    Private Sub btnFileToDocLibrary_Click(sender As Object, e As EventArgs) Handles btnFileToDocLibrary.Click
-        Dim SavedFileName As String = String.Empty
+    Private Sub btnTaskChoiceAsFileTo_File_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsFileTo_File.Click
+        '#feladatválasztó ablakot hívja meg
+        Dim TaskChooser As New SPTaxonomy_wWForms_TreeView.SPTreeview
+        AddHandler TaskChooser.ShowTaskSelected, AddressOf FileWithChosenTaskMetadata
+        TaskChooser.Show()
+    End Sub
+
+    Private Async Sub FileWithChosenTaskMetadata(taskID As Integer)
+        Dim SavedFileName As String = ReturnSavedFileName()
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+
+        Dim DocLibrarytoUpload As CSOM.List = MySPHelper.Context.Web.Lists.GetByTitle(DocClass.ClientDocumentLibraryName)
+        MySPHelper.Context.Load(DocLibrarytoUpload)
+        MySPHelper.Context.Load(DocLibrarytoUpload, Function(dl) dl.ContentTypes, Function(dl) dl.ParentWeb.Id, Function(dl) dl.Id)
+        MySPHelper.Context.Load(DocLibrarytoUpload.RootFolder.Files)
+        MySPHelper.Context.Load(DocLibrarytoUpload.Fields)
+        Dim taxFieldEKW = MySPHelper.Context.CastTo(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField)(DocLibrarytoUpload.Fields.GetByInternalNameOrTitle("TaxKeyword"))
+        MySPHelper.Context.Load(taxFieldEKW)
+        'kellenek ezek?
+        MySPHelper.Context.ExecuteQuery()
+        Dim SourceTask As TaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = taskID)
+        Dim InterimDoc As DocClass = GetDocClassFromSelectedTask(SourceTask, SavedFileName)
+        Dim FileLeafTarget As String
+        Dim _ListItem As Microsoft.SharePoint.Client.ListItem
+        Using fstream As New FileStream(InterimDoc.FilePathLocalForUploading, FileMode.Open)
+            FileLeafTarget = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+            _ListItem = Await SPHelper.SaveToDocLibrary.SaveAndUploadAsync(Globals.ThisAddIn.Connection.Context, fstream, FileLeafTarget, DocLibrarytoUpload)
+            MySPHelper.SetListItemValuestoDocumentClassValues(_ListItem, InterimDoc, taxFieldEKW, taxFieldInternalDoc:=Nothing)
+        End Using
+        MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, SourceTask.ID, FileLeafTarget)
+        AddToHistoryFromSelectedTaskAndClear(SourceTask)
+    End Sub
+
+    Private Function CheckUnicity(targetPath As String, targetFileName As String) As String
+        Dim ReturnName As String = targetPath & targetFileName
+        If SPHelper.SPFileFolder.TryGetFolderByServerRelativeUrl(Globals.ThisAddIn.Connection.Context, targetPath & targetFileName) Then
+            Dim random = HPHelper.StringRelated.RandomCharGet(5)
+            Dim msgResponse As MsgBoxResult = MsgBox("The filename " & targetFileName & " already exists in the folder." & Environment.NewLine &
+                                                     "Do you want to overwrite (YES) or " & Environment.NewLine & "save the name with a new ending (NO = " & random & ")?", MsgBoxStyle.YesNo)
+            If msgResponse = vbNo Then ReturnName = targetPath & Path.GetFileNameWithoutExtension(targetFileName) & random & Path.GetExtension(targetFileName)
+        End If
+        Return ReturnName
+    End Function
+    Private Function ReturnSavedFileName() As String
+        Dim SavedFileName = String.Empty
         If IsNothing(cbFileEmailOrAttachments.SelectedItem) OrElse cbFileEmailOrAttachments.SelectedItem.ID = AttachmentIndex.FullEmail Then
             SavedFileName = GetMailwAttachmentsIncludedAsFile(CurrentMail)
         ElseIf cbFileEmailOrAttachments.SelectedItem.ID = AttachmentIndex.EmailWithoutAttachment Then
@@ -179,39 +293,97 @@ Public Class HUI_TaskDocFormRegion
             Dim AttachmentSelected As OutlookItemAttachment = cbFileEmailOrAttachments.SelectedItem
             SavedFileName = GetMailAttachmentWOMailAsFile(CurrentMail, AttachmentSelected.ID)
         End If
-        '#Mentse le az itemet a title, kiválasztott matter és partner metaadatokkal.
-        '#Ha volt korábbi task kiválasztva a cbFileHistory-ban, akkor fűzze hozzá a taskhoz related item-ként az új itemet
+        Return SavedFileName
+    End Function
+
+    Private Sub cbFileEmailOrAttachments_SelectedValueChanged(sender As Object, e As EventArgs) Handles cbFileEmailOrAttachments.SelectedValueChanged
+        If cbFileEmailOrAttachments.SelectedIndex < 2 Then Exit Sub
+        Dim SelectedAttachment As Attachment = cbFileEmailOrAttachments.SelectedItem
+        tbTitleFile.Text = SelectedAttachment.DisplayName
     End Sub
 
 #End Region
-    'Private Sub cbFuzzLeElozmenyhez_Click(sender As Object, e As EventArgs)
-    '    If IsNothing(CurrentMail.ConversationID) Then Exit Sub
-    '    '#a cbTasksFound szerinti Selected TaskID-hoz fűzze le ezt az emailt, azaz: 
-    '    '   (A) csatolmányként lementi Taskhoz (egyszerű, de nem lesz kereshető), é/v 
-    '    '   (B) lementi a Task adatai szerinti Dochelyre [oda is rögzíti a TaskID-t és a TaskID egyéb beállításait], ÉS belinkeli a lementést a Taskhoz,
-    '    '       mentési fájlnév és adatok automatizáltan vagy külön ablak [=régi FileMail]? ilyenkor egész emailt menti, csatolmányokat nem kezeli külön
+    Private Sub AddToHistoryFromFileAndClear()
+        cbFileHistory.Items.Add(New HistoryItem With {.Matter = cbMatter.SelectedItem, .Partner = lbTotalPartners.Items.Cast(Of PersonClass).ToList})
+        If cbFileHistory.Items.Count > 20 Then cbFileHistory.Items.RemoveAt(0)
+        cbMatter.SelectedItem = Nothing
+        lbTotalPartners.Items.Clear()
+    End Sub
 
-    '    'Dim result As List(Of TaskClass) = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ConversationID = CurrentMail.ConversationID).ToList
-    '    'Dim TaskTitlesFound As String = String.Empty
-    '    'For Each _task As TaskClass In result
-    '    '    TaskTitlesFound += _task.TitleOrTaskName
-    '    'Next
-    '    'If result.Count = 0 Then lblConversationID.Text = "Nem találtam" Else lblConversationID.Text = TaskTitlesFound
-    '    'Result.Count szerint válogathatunk irányadó Task közül => lefűz ide, lefűz alá új subtaskként [új adatok?], lefűz új taskként [új adatok?], tasklist megnyitása
+    Private Sub AddToHistoryFromSelectedTaskAndClear(sourceTask As TaskClass)
+        cbFileHistory.Items.Add(New HistoryItem With {.Task = sourceTask})
+        If cbFileHistory.Items.Count > 20 Then cbFileHistory.Items.RemoveAt(0)
+        cbTaskChosenHistoryNewTask.Items.Add(New HistoryItem With {.Task = sourceTask})
+        If cbTaskChosenHistoryNewTask.Items.Count > 20 Then cbTaskChosenHistoryNewTask.Items.RemoveAt(0)
+        cbMatter.SelectedItem = Nothing
+        lbTotalPartners.Items.Clear()
+    End Sub
 
-    'End Sub
+    Private Function GetDocClassFromFileTab(fileName As String) As DocClass
+        Dim InterimDoc As New DocClass With {.FilePathLocalForUploading = fileName, .FileName = Path.GetFileName(fileName),
+            .TitleOrTaskName = tbTitleFile.Text, .PathtoSaveTo = tbPathToSaveTo.Text}
+        If lbTotalPartners.Items.Count > 0 Then
+            InterimDoc.Persons = lbTotalPartners.Items.Cast(Of PersonClass).ToList
+        End If
+        InterimDoc = GetDataFromHistoryItem(InterimDoc, cbFileHistory)
+        Return InterimDoc
+    End Function
+    Private Function IsTaskSelectedAsFileHistoryItem() As Boolean
+        Dim SelectedHistory As HistoryItem = cbFileHistory.SelectedItem
+        If IsNothing(SelectedHistory) Then Return False
+        If Not IsNothing(SelectedHistory.Task) Then Return True Else Return False
+    End Function
+    Private Function ReturnTaskFromHistoryItem(cbHistory As ComboBox) As TaskClass
+        Dim SelectedHistory As HistoryItem = cbHistory.SelectedItem
+        If IsNothing(SelectedHistory) Then Return Nothing
+        Return SelectedHistory.Task
+    End Function
+    Private Function GetDataFromHistoryItem(doc As DocClass, cbHistory As ComboBox) As DocClass
+        If IsNothing(cbHistory.SelectedItem) Then
+            doc.Matter = cbMatter.SelectedItem
+        Else
+            Dim SelectedHistory As HistoryItem = cbHistory.SelectedItem
+            If Not IsNothing(SelectedHistory.Matter) Then doc.Matter = SelectedHistory.Matter
+            If Not IsNothing(SelectedHistory.Partner) Then doc.Persons = SelectedHistory.Partner
+            If Not IsNothing(SelectedHistory.Task) Then
+                Dim SelectedTask As TaskClass = SelectedHistory.Task
+                doc.Matter = SelectedTask.Matter
+                doc.Persons = SelectedTask.Persons
+                doc.Keywords = SelectedTask.Keywords
+                doc.ProjectSystems = SelectedTask.ProjectSystems
+            End If
+        End If
+        Return doc
+    End Function
+    Private Function GetDocClassFromSelectedTask(sourceTask As TaskClass, fileName As String) As DocClass
+        Dim InterimDoc As New DocClass With {.FilePathLocalForUploading = fileName, .FileName = Path.GetFileName(fileName),
+            .TitleOrTaskName = tbTitleFile.Text, .PathtoSaveTo = tbPathToSaveTo.Text}
+        If lbTotalPartners.Items.Count > 0 Then
+            InterimDoc.Persons = lbTotalPartners.Items.Cast(Of PersonClass).ToList
+        End If
+        InterimDoc = GetDataFromSelectedTask(InterimDoc, sourceTask)
+        Return InterimDoc
+    End Function
+    Private Function GetDataFromSelectedTask(doc As DocClass, SourceTask As TaskClass) As DocClass
+        If Not IsNothing(cbMatter.SelectedItem) Then doc.Matter = cbMatter.SelectedItem
+        If IsNothing(SourceTask) Then Return doc
+        If Not IsNothing(SourceTask.Matter) Then doc.Matter = SourceTask.Matter
+        If Not IsNothing(SourceTask.Persons) Then doc.Persons = SourceTask.Persons
+        doc.Keywords = SourceTask.Keywords
+        doc.ProjectSystems = SourceTask.ProjectSystems
+        Return doc
+    End Function
+    Private Function GetDocClassFromTaskHistory(fileName As String) As DocClass
+        Dim InterimDoc As New DocClass With {.FilePathLocalForUploading = fileName, .FileName = Path.GetFileName(fileName),
+            .TitleOrTaskName = tbTitleFile.Text, .PathtoSaveTo = tbPathToSaveTo.Text}
+        If lbTotalPartners.Items.Count > 0 Then
+            InterimDoc.Persons = lbTotalPartners.Items.Cast(Of PersonClass).ToList
+        End If
+        InterimDoc = GetDataFromHistoryItem(InterimDoc, cbTaskChosenHistoryNewTask)
+        Return InterimDoc
+    End Function
 
-    'Private Sub cbTaskForThisConversationId_SelectedIndexChanged(sender As Object, e As EventArgs)
-    'End Sub
-    ''Private Sub btnFileToChosenHistoryFileTask_Click(sender As Object, e As EventArgs) Handles btnFileToChosenHistoryFileTask.Click
-    ''    If IsNothing(cbTaskChosenHistoryFileTask.SelectedValue) Then Exit Sub
-    ''    '#Mentse le az itemet a korábbi task metaadataival, majd fűzze hozzá related item-ként a korábbi taskhoz
-
-    ''End Sub
-
-    'Private Sub btnChooseOtherTask_Click(sender As Object, e As EventArgs)
-    '    '#Feladatválasztó ablak után lényegében azt kínálja fel, mint btnFuzzLeElozmenyhez esetén
-    'End Sub
-
-
+    Private Sub cbTaskChosenHistoryNewTask_SelectedValueChanged(sender As Object, e As EventArgs) Handles cbTaskChosenHistoryNewTask.SelectedValueChanged
+        btnHistoryChosenAsTemplateForNewTask.Enabled = True
+    End Sub
 End Class
