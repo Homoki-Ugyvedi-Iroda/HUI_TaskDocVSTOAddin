@@ -171,6 +171,27 @@ Module OutlookApplicationHelper
         If IsNothing(InspectorMailItem) Then Return ExplorerMailItem Else Return InspectorMailItem
     End Function
 #Region "GetResultsfromMailItem"
+    Public Sub AddCategoryToMail(mailItem As MailItem, valueToAdd As String)
+        If String.IsNullOrWhiteSpace(mailItem.Categories) Then
+            mailItem.Categories += valueToAdd
+            mailItem.Save()
+            'Trace.WriteLine("AddCategoryMail_NoCat_mailItemSave AFTER: " & mailItem.Body)
+            Exit Sub
+        End If
+        If mailItem.Categories.Contains(valueToAdd) Then Exit Sub
+        mailItem.Categories += "; " & valueToAdd
+        mailItem.Save()
+        'Trace.WriteLine("AddCategoryMail_NewCat_mailItemSave AFTER: " & mailItem.Body)
+        'Marshal.ReleaseComObject(mailItem)
+        'mailItem = Nothing
+    End Sub
+    Public Function GetAllAddress(sourceMailItem As MailItem, RecipientType As OlMailRecipientType) As List(Of String)
+        Dim result As New List(Of String)
+        For Each recipient As Recipient In sourceMailItem.Recipients
+            If recipient.Type = RecipientType Then result.Add(recipient.Address)
+        Next
+        Return result
+    End Function
     Private Function GetMailBody(_sourceItem As MailItem) As String
         If Not IsNothing(_sourceItem) AndAlso Not IsNothing(_sourceItem.Body) Then
             Return _sourceItem.Body.ToString()

@@ -61,6 +61,7 @@ Partial Class HUI_TaskDocFormRegion
         Me.cbFileEmailOrAttachments = New System.Windows.Forms.ComboBox()
         Me.tbTitleFile = New System.Windows.Forms.TextBox()
         Me.Label1 = New System.Windows.Forms.Label()
+        Me.cbSubTask = New System.Windows.Forms.CheckBox()
         Me.TabControl1.SuspendLayout()
         Me.TabFileAsDoc.SuspendLayout()
         Me.TableLayoutPanelFileToDocLibrary.SuspendLayout()
@@ -381,14 +382,16 @@ Partial Class HUI_TaskDocFormRegion
         '
         'TableLayoutPanelCreateNewTask
         '
-        Me.TableLayoutPanelCreateNewTask.ColumnCount = 2
+        Me.TableLayoutPanelCreateNewTask.ColumnCount = 3
         Me.TableLayoutPanelCreateNewTask.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle())
-        Me.TableLayoutPanelCreateNewTask.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100.0!))
+        Me.TableLayoutPanelCreateNewTask.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50.0!))
+        Me.TableLayoutPanelCreateNewTask.ColumnStyles.Add(New System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50.0!))
         Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.cbTaskChosenHistoryNewTask, 1, 0)
         Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.Label2, 0, 0)
         Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnHistoryChosenAsTemplateForNewTask, 1, 1)
         Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnExistingTaskChoiceAsTemplateForNewTask, 0, 2)
         Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.btnCreateNewTask, 0, 3)
+        Me.TableLayoutPanelCreateNewTask.Controls.Add(Me.cbSubTask, 2, 1)
         Me.TableLayoutPanelCreateNewTask.Dock = System.Windows.Forms.DockStyle.Fill
         Me.TableLayoutPanelCreateNewTask.Location = New System.Drawing.Point(0, 0)
         Me.TableLayoutPanelCreateNewTask.Name = "TableLayoutPanelCreateNewTask"
@@ -403,6 +406,7 @@ Partial Class HUI_TaskDocFormRegion
         '
         'cbTaskChosenHistoryNewTask
         '
+        Me.TableLayoutPanelCreateNewTask.SetColumnSpan(Me.cbTaskChosenHistoryNewTask, 2)
         Me.cbTaskChosenHistoryNewTask.Dock = System.Windows.Forms.DockStyle.Fill
         Me.cbTaskChosenHistoryNewTask.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.cbTaskChosenHistoryNewTask.FormattingEnabled = True
@@ -504,6 +508,16 @@ Partial Class HUI_TaskDocFormRegion
         Me.Label1.TabIndex = 2
         Me.Label1.Text = "Title (Name)"
         '
+        'cbSubTask
+        '
+        Me.cbSubTask.AutoSize = True
+        Me.cbSubTask.Location = New System.Drawing.Point(436, 30)
+        Me.cbSubTask.Name = "cbSubTask"
+        Me.cbSubTask.Size = New System.Drawing.Size(228, 17)
+        Me.cbSubTask.TabIndex = 5
+        Me.cbSubTask.Text = "Create subtask instead for the chosen task"
+        Me.cbSubTask.UseVisualStyleBackColor = True
+        '
         'HUI_TaskDocFormRegion
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -593,6 +607,7 @@ Partial Class HUI_TaskDocFormRegion
     Friend WithEvents btnCreateFolderIfNotExisting As Windows.Forms.Button
     Friend WithEvents btnChangePartnerOrder As Windows.Forms.Button
     Friend WithEvents btnCreateNewTask As Windows.Forms.Button
+    Friend WithEvents cbSubTask As Windows.Forms.CheckBox
 
     Partial Public Class HUI_TaskDocFormRegionFactory
         Implements Microsoft.Office.Tools.Outlook.IFormRegionFactory

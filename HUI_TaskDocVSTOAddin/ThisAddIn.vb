@@ -23,7 +23,7 @@ Public Class ThisAddIn
     Public CTaskTypesPath = Path.Combine(CacheDirectory, "TaskTypes.json")
     Public CUsersPath = Path.Combine(CacheDirectory, "Users.json")
     Public CKeywords = Path.Combine(CacheDirectory, "Keywords.json")
-
+    Public CTaxFieldnames = Path.Combine(CacheDirectory, "TaxFields.json")
     Public RefreshCounter As Byte = 1
 
     Private Function GetCachePath(name As String) As String
@@ -96,7 +96,8 @@ Public Class ThisAddIn
         Me.Connection.Tasks = Await m.GetAllTasksAsync(Me.Connection)
         Me.Connection.AllTerms = Await m.GetAllTermsAsync(Me.Connection)
         Me.Connection.Keywords = Await m.GetAllKeywords(Me.Connection)
-
+        Me.Connection.taxFieldEKW = Await TermClass.GetTaxFieldEKWAsync(Connection.Context, TaskClass.ListName)
+        Me.Connection.taxFieldInternalDoc = Await TermClass.GetFieldInternalDocAsync(Connection.Context)
         Globals.ThisAddIn.Log.logger.Info("RefreshSpLookupValues finished")
     End Function
     Private Async Function LoadChoiceColumns(input As DataLayer) As Task
@@ -128,6 +129,11 @@ Public Class ThisAddIn
         Me.Connection.Matters = DeserializeMatterClass(CMattersPath)
         Me.Connection.Persons = DeserializePersonClass(CPersonsPath)
         Me.Connection.Tasks = DeserializeTaskClass(CTasksPath)
+        Dim listTaxField As List(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField) = DeserializeFieldNames(CTaxFieldnames)
+        If listTaxField.Count = 2 Then
+            Me.Connection.taxFieldEKW = listTaxField.First
+            Me.Connection.taxFieldInternalDoc = listTaxField.Last
+        End If
         Globals.ThisAddIn.Log.logger.Info("Values loaded from cache.")
     End Sub
     Private Sub SerializeValues(PartialRefresh As Boolean)
@@ -182,6 +188,11 @@ Public Class ThisAddIn
         If Not IsNothing(Me.Connection.Persons) AndAlso Me.Connection.Persons.Count > 0 Then
             Dim succeeded = HPHelper.Serialize.Serialize(CPersonsPath, Me.Connection.Persons)
             If succeeded Then success += 1
+        End If
+        If Not IsNothing(Me.Connection.taxFieldEKW) AndAlso IsNothing(Me.Connection.taxFieldInternalDoc) Then
+            Dim taxList As List(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField) = New List(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField)
+            taxList.AddRange({Me.Connection.taxFieldEKW, Me.Connection.taxFieldInternalDoc})
+            Dim succeeded = HPHelper.Serialize.Serialize(CTaxFieldnames, taxList)
         End If
         Globals.ThisAddIn.Log.logger.Info("Items serialized from memory to file (" & success & ")")
     End Sub
