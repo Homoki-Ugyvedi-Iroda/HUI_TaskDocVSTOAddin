@@ -57,11 +57,11 @@ Partial Class HUI_TaskDocFormRegion
         Me.btnHistoryChosenAsTemplateForNewTask = New System.Windows.Forms.Button()
         Me.btnExistingTaskChoiceAsTemplateForNewTask = New System.Windows.Forms.Button()
         Me.btnCreateNewTask = New System.Windows.Forms.Button()
+        Me.cbSubTask = New System.Windows.Forms.CheckBox()
         Me.TableLayoutPanelTop = New System.Windows.Forms.TableLayoutPanel()
         Me.cbFileEmailOrAttachments = New System.Windows.Forms.ComboBox()
         Me.tbTitleFile = New System.Windows.Forms.TextBox()
         Me.Label1 = New System.Windows.Forms.Label()
-        Me.cbSubTask = New System.Windows.Forms.CheckBox()
         Me.TabControl1.SuspendLayout()
         Me.TabFileAsDoc.SuspendLayout()
         Me.TableLayoutPanelFileToDocLibrary.SuspendLayout()
@@ -461,6 +461,16 @@ Partial Class HUI_TaskDocFormRegion
         Me.btnCreateNewTask.Text = "Create new task with this mail"
         Me.btnCreateNewTask.UseVisualStyleBackColor = True
         '
+        'cbSubTask
+        '
+        Me.cbSubTask.AutoSize = True
+        Me.cbSubTask.Location = New System.Drawing.Point(436, 30)
+        Me.cbSubTask.Name = "cbSubTask"
+        Me.cbSubTask.Size = New System.Drawing.Size(228, 17)
+        Me.cbSubTask.TabIndex = 5
+        Me.cbSubTask.Text = "Create subtask instead for the chosen task"
+        Me.cbSubTask.UseVisualStyleBackColor = True
+        '
         'TableLayoutPanelTop
         '
         Me.TableLayoutPanelTop.ColumnCount = 2
@@ -508,16 +518,6 @@ Partial Class HUI_TaskDocFormRegion
         Me.Label1.TabIndex = 2
         Me.Label1.Text = "Title (Name)"
         '
-        'cbSubTask
-        '
-        Me.cbSubTask.AutoSize = True
-        Me.cbSubTask.Location = New System.Drawing.Point(436, 30)
-        Me.cbSubTask.Name = "cbSubTask"
-        Me.cbSubTask.Size = New System.Drawing.Size(228, 17)
-        Me.cbSubTask.TabIndex = 5
-        Me.cbSubTask.Text = "Create subtask instead for the chosen task"
-        Me.cbSubTask.UseVisualStyleBackColor = True
-        '
         'HUI_TaskDocFormRegion
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -552,13 +552,7 @@ Partial Class HUI_TaskDocFormRegion
 
     End Sub
 
-    Friend WithEvents TabControl1 As Windows.Forms.TabControl
-
-    Friend WithEvents TabFileAsDoc As Windows.Forms.TabPage
-
     Friend WithEvents TabFileAsTask As Windows.Forms.TabPage
-
-    Friend WithEvents TabCreateTask As Windows.Forms.TabPage
 
     Friend WithEvents TableLayoutPanelTop As Windows.Forms.TableLayoutPanel
 
@@ -608,6 +602,11 @@ Partial Class HUI_TaskDocFormRegion
     Friend WithEvents btnChangePartnerOrder As Windows.Forms.Button
     Friend WithEvents btnCreateNewTask As Windows.Forms.Button
     Friend WithEvents cbSubTask As Windows.Forms.CheckBox
+    Public WithEvents TabControl1 As Windows.Forms.TabControl
+
+    Public WithEvents TabFileAsDoc As Windows.Forms.TabPage
+
+    Public WithEvents TabCreateTask As Windows.Forms.TabPage
 
     Partial Public Class HUI_TaskDocFormRegionFactory
         Implements Microsoft.Office.Tools.Outlook.IFormRegionFactory

@@ -8,8 +8,11 @@ Public Class ThisAddIn
     Property TempPath As String
 
     Public Const UnknownFolderName = "/_Unknown/"
+    Public Const DeferredDeliveryTimeinSeconds As Integer = 30
+
     Public Log As HPHelper.DebugTesting
     Public WithEvents TimerForRefresh3min As New Timer
+    Private WithEvents SentItem As Outlook.Items
 
     Public CacheDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Cached")
     Public CInternalDocTypesPath = Path.Combine(CacheDirectory, "InternalDocTypes.json")
@@ -25,6 +28,17 @@ Public Class ThisAddIn
     Public CKeywords = Path.Combine(CacheDirectory, "Keywords.json")
     Public CTaxFieldnames = Path.Combine(CacheDirectory, "TaxFields.json")
     Public RefreshCounter As Byte = 1
+    Private LastItemFiledGuid As String
+
+    Public Class ControlValuesGiven
+        Property Task As TaskClass
+        Property Matter As MatterClass
+        Property Title As String
+        Property Path As String
+        Property Partners As List(Of PersonClass)
+        'Property CreateSubTask As Boolean
+        'Property CreateTask As Boolean
+    End Class
 
     Private Function GetCachePath(name As String) As String
         Return Path.Combine(CacheDirectory, name + ".json")
@@ -196,6 +210,124 @@ Public Class ThisAddIn
         End If
         Globals.ThisAddIn.Log.logger.Info("Items serialized from memory to file (" & success & ")")
     End Sub
+
+#Region "ItemSend"
+    Private Function RecordFileSaveAsInformation(InputRegion As HUI_TaskDocFormRegion) As ControlValuesGiven
+        Dim Result As New ControlValuesGiven
+        If InputRegion.cbMatter.Items.Count > 0 Then
+            If IsNothing(InputRegion.cbMatter.SelectedItem) Then
+                Result.Matter = InputRegion.cbMatter.Items(0)
+            Else Result.Matter = InputRegion.cbMatter.SelectedItem
+            End If
+        End If
+        For Each item As PersonClass In InputRegion.lbTotalPartners.Items
+            Result.Partners.Add(item)
+        Next
+        Result.Path = InputRegion.tbPathToSaveTo.Text
+        Result.Title = InputRegion.tbTitleFile.Text
+        With InputRegion.cbFileHistory
+            If .Items.Count = 0 Or IsNothing(.SelectedItem) Then Return Result
+            Dim SelectedHistory As HUI_TaskDocFormRegion.HistoryItem = InputRegion.cbFileHistory.SelectedItem
+            If IsNothing(SelectedHistory) Then Return Result
+            If Not IsNothing(SelectedHistory.Matter) Then Result.Matter = SelectedHistory.Matter
+            If Not IsNothing(SelectedHistory.Partner) Then Result.Partners = SelectedHistory.Partner
+            If Not IsNothing(SelectedHistory.Task) Then
+                Result.Task = SelectedHistory.Task
+            End If
+        End With
+        Return Result
+    End Function
+    Private Function RecordCreateNewTaskAsInformation(InputRegion As HUI_TaskDocFormRegion) As ControlValuesGiven
+        Dim Result As New ControlValuesGiven
+        With InputRegion.cbTaskChosenHistoryNewTask
+            If IsNothing(.SelectedItem) Then
+                Return RecordFileSaveAsInformation(InputRegion)
+            Else
+                Dim SelectedHistory As HUI_TaskDocFormRegion.HistoryItem = .SelectedItem
+                If IsNothing(SelectedHistory) Then Return Result
+                If Not IsNothing(SelectedHistory.Matter) Then Result.Matter = SelectedHistory.Matter
+                If Not IsNothing(SelectedHistory.Partner) Then Result.Partners = SelectedHistory.Partner
+                If Not IsNothing(SelectedHistory.Task) Then
+                    Result.Task = SelectedHistory.Task
+                End If
+            End If
+        End With
+        Return Result
+    End Function
+    Private Sub OnItemSend(Item As System.Object, ByRef Cancel As Boolean) Handles Application.ItemSend
+        Dim recipient As Outlook.Recipient = Nothing
+        Dim recipients As Outlook.Recipients = Nothing
+        Dim mail As Outlook.MailItem = TryCast(Item, Outlook.MailItem)
+        If IsNothing(mail) Then Exit Sub 'Pl. delegált Task kiküldése esetén
+        Dim SendAt = Now.AddSeconds(DeferredDeliveryTimeinSeconds)
+        mail.DeferredDeliveryTime = SendAt
+        'We can achieve this by using the MailItem.DeferredDeliveryTime [see: MailItem.DeferredDeliveryTime Property]. https://social.msdn.microsoft.com/Forums/vstudio/en-US/3e408d93-9f26-422f-a571-881d603578b7/programmatically-set-deferred-delivery?forum=vsto
+        'mail.SaveSentMessageFolder = csak ugyanazon store-ban működik!
+
+        Dim MatterUsed As MatterClass = Nothing
+        Dim TaskOrFileRecorded As New ControlValuesGiven
+        For Each formRegion In Globals.FormRegions
+            If TypeOf formRegion IsNot HUI_TaskDocFormRegion Then Continue For
+            Dim formRegionPresented As HUI_TaskDocFormRegion = CType(formRegion, HUI_TaskDocFormRegion)
+            If Not formRegionPresented.OutlookItem.Equals(mail) OrElse formRegionPresented.Open = False Then Continue For
+            If formRegionPresented.LastTabPage = HUI_TaskDocFormRegion.Tab.CreateNewTask Then
+                TaskOrFileRecorded = RecordCreateNewTaskAsInformation(formRegionPresented)
+            ElseIf formRegionPresented.LastTabPage = HUI_TaskDocFormRegion.Tab.FileToDocLibrary Then
+                TaskOrFileRecorded = RecordFileSaveAsInformation(formRegionPresented)
+            End If
+        Next
+
+        If Not IsNothing(MatterUsed) AndAlso Not String.IsNullOrWhiteSpace(MatterUsed.ObligatoryBCCAddresses) AndAlso Not mail.Sensitivity = Microsoft.Office.Interop.Outlook.OlSensitivity.olPersonal Then
+            recipients = mail.Recipients
+            Dim recipientlist As String() = Split(MatterUsed.ObligatoryBCCAddresses, ";")
+            If recipientlist.Count > 0 Then
+                For Each recs In recipientlist
+                    recipient = recipients.Add(recs)
+                    recipient.Type = Outlook.OlMailRecipientType.olBCC
+                Next
+                If Not recipients.ResolveAll Then
+                    Dim strMsg = "Nem tudtam címezni az összes megadott Bcc címzettet. " & Environment.NewLine & "Így is elküldi?"
+                    Dim res = MsgBox(strMsg, vbYesNo + vbDefaultButton1, "Bcc/Cc nem címezhető: " & MatterUsed.ObligatoryBCCAddresses)
+                    If res = vbNo Then
+                        Cancel = True
+                    End If
+                    'If Not IsNothing(recipient) Then Marshal.ReleaseComObject(recipient)
+                    'If Not IsNothing(recipients) Then Marshal.ReleaseComObject(recipients)
+                End If
+            End If
+        End If
+
+        'SentItem esemény egy Outlook.Items esemény https://docs.microsoft.com/en-us/office/vba/api/outlook.items.itemadd
+        SentItem = Application.Session.GetDefaultFolder(Outlook.OlDefaultFolders.olFolderSentMail).Items
+        'A SentMail folderbe ha bekerül egy mailItem, akkor lefut
+        AddHandler SentItem.ItemAdd, Sub() AfterSent(SentItem, TaskOrFileRecorded)
+    End Sub
+
+    Private Sub AfterSent(item As System.Object, record As ControlValuesGiven)
+        Dim mail As Outlook.MailItem = TryCast(item, Outlook.MailItem)
+        If IsNothing(mail) Then Exit Sub
+        'Ellenőrzi, hogy már le lett-e fűzve egyszer:
+        If LastItemFiledGuid = mail.EntryID Then Exit Sub
+
+        LastItemFiledGuid = mail.EntryID
+        Dim SavedFileName = GetMailwAttachmentsIncludedAsFile(mail)
+        Dim NewDocClass As DocClass
+        If Not IsNothing(record.Task) Then
+            'lefűzés taskhoz IS
+            NewDocClass = HUI_TaskDocFormRegion.FillDocClassWithRecord(record, SavedFileName)
+            HUI_TaskDocFormRegion.FileToDocLibraryAsFile(NewDocClass, record.Task.ID)
+        Else
+            'lefűzés csak docclasshoz
+            NewDocClass = HUI_TaskDocFormRegion.FillDocClassWithRecord(record, SavedFileName)
+            HUI_TaskDocFormRegion.FileToDocLibraryAsFile(NewDocClass)
+        End If
+        AddCategoryToMail(mail, SPHelper.SPHUI.FiledToSP)
+        '#Itt át lehetne mozgatni másik mappába vagy törölni, de már le van fűzve
+        '#Mi van, ha ki van kapcsolva a Sent Itemsbe lefűzés?
+    End Sub
+
+#End Region
+
 
 End Class
 

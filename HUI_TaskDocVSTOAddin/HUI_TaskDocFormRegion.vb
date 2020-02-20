@@ -24,6 +24,11 @@ Public Class HUI_TaskDocFormRegion
     End Class
 
 #End Region
+    Public Enum Tab
+        FileToDocLibrary = 0
+        CreateNewTask = 1
+    End Enum
+    Public Property Open As Boolean
     Property LastTabPage As Integer
     Property ShowAllPartners As Boolean
     Property TaskTreeView As TreeView
@@ -42,15 +47,17 @@ Public Class HUI_TaskDocFormRegion
     'Use Me.OutlookFormRegion to get a reference to the form region.
     Private Sub HUI_TaskDocFormRegion_FormRegionShowing(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionShowing
         'Feltölti a három cb-t értékekkel, mindhárom cb értéke azonos, csak a Taskból és a body-ból veszi ki a history-t
+        Me.Open = True
         CurrentMail = TryCast(Me.OutlookItem, MailItem)
         If IsNothing(CurrentMail) Then Exit Sub
-        If OutlookApplicationHelper.IsNewAndEmpty(CurrentMail) Then Exit Sub
-        tbTitleFile.Text = CurrentMail.Subject
-        LoadAttachmentNames(CurrentMail)
         LoadValuesIntocbTaskChosen({cbTaskChosenHistoryNewTask, cbTaskChosenHistoryFileTask, cbFileHistory}, CurrentMail)
         LoadValuesIncbMattersAllActive()
         LoadValuesIncbPartnersAllActive()
         LoadValuesInTaskChooser()
+        If Not OutlookApplicationHelper.IsNewAndEmpty(CurrentMail) Then
+            tbTitleFile.Text = CurrentMail.Subject
+            LoadAttachmentNames(CurrentMail)
+        End If
     End Sub
 
 
@@ -58,13 +65,8 @@ Public Class HUI_TaskDocFormRegion
     'Use Me.OutlookItem to get a reference to the current Outlook item.
     'Use Me.OutlookFormRegion to get a reference to the form region.
     Private Sub HUI_TaskDocFormRegion_FormRegionClosed(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionClosed
-
+        Me.Open = False
     End Sub
-    Private Sub LoadValuesInTaskChooser()
-        Dim MySPTaxonomyTreeView As New SPTaxonomy_wWForms_TreeView.SPTreeview
-        Me.TaskTreeView = MySPTaxonomyTreeView.ShowNodeswithParents(Globals.ThisAddIn.Connection.Tasks, True)
-    End Sub
-
     Private Sub LoadValuesIntocbTaskChosen(cbControls As IEnumerable(Of ComboBox), currentMail As MailItem)
         If Not IsNothing(currentMail) AndAlso Not IsNothing(currentMail.ConversationID) Then
             Dim ResultFromConversationID As List(Of TaskClass) = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ConversationID = currentMail.ConversationID).ToList
@@ -93,6 +95,10 @@ Public Class HUI_TaskDocFormRegion
         lbTotalPartners.DisplayMember = "Title"
         lbTotalPartners.ValueMember = "ID"
         cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Active = True).ToArray)
+    End Sub
+    Private Sub LoadValuesInTaskChooser()
+        Dim MySPTaxonomyTreeView As New SPTaxonomy_wWForms_TreeView.SPTreeview
+        Me.TaskTreeView = MySPTaxonomyTreeView.ShowNodeswithParents(Globals.ThisAddIn.Connection.Tasks, True)
     End Sub
 
     Private Sub LoadAttachmentNames(currentMail As MailItem)
@@ -183,6 +189,37 @@ Public Class HUI_TaskDocFormRegion
         'Nyissa meg egy böngészőablakban az új file-t!
         DocClass.OpenDocToEdit(_ListItem.Id)
     End Sub
+    Public Shared Async Sub FileToDocLibraryAsFile(InterimDoc As DocClass, Optional taskID As Integer = 0)
+        Dim FileLeafTarget As String = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FilePathLocalForUploading)
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim DocLibrarytoUpload = DocClass.ClientDocumentLibraryName
+        Dim _ListItem As CSOM.ListItem
+        'Lementi a csatolmányt egy önálló fájlként a kiválasztott előzmény task adatai alapján (matter, partners, keywords, projectorsystem)
+        Using fstream As New FileStream(InterimDoc.FilePathLocalForUploading, FileMode.Open)
+            _ListItem = Await SPHelper.SaveToDocLibrary.SaveAndUploadAsync(Globals.ThisAddIn.Connection.Context, fstream, FileLeafTarget, DocLibrarytoUpload)
+        End Using
+        MySPHelper.SetListItemValuestoDocumentClassValues(_ListItem, InterimDoc)
+        If taskID <> 0 Then
+            MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, taskID, FileLeafTarget)
+        End If
+
+    End Sub
+    Public Shared Function FillDocClassWithRecord(_record As ThisAddIn.ControlValuesGiven, localPathName As String) As DocClass
+        Dim NewDoc As New DocClass With
+                {.FilePathLocalForUploading = localPathName, .FileName = Path.GetFileName(localPathName),
+                .TitleOrTaskName = _record.Title, .PathtoSaveTo = _record.Path, .Matter = _record.Matter, .Persons = _record.Partners}
+        If Not IsNothing(_record.Task) Then
+            With NewDoc
+                If Not IsNothing(_record.Task.Matter) Then .Matter = _record.Task.Matter
+                If Not IsNothing(_record.Task.Persons) Then .Persons = _record.Task.Persons
+                If Not IsNothing(_record.Task.TitleOrTaskName) Then .TitleOrTaskName = _record.Task.TitleOrTaskName
+                If Not IsNothing(_record.Task.ProjectSystems) Then .ProjectSystems = _record.Task.ProjectSystems
+                If Not IsNothing(_record.Task.Keywords) Then .Keywords = _record.Task.Keywords
+            End With
+        End If
+        Return NewDoc
+    End Function
+
 
     Private Async Sub FileWithChosenTaskMetadata(taskID As Integer)
         Dim MySPHelper = Globals.ThisAddIn.Connection
@@ -255,19 +292,18 @@ Public Class HUI_TaskDocFormRegion
         CheckIfPathChangesForPartnerChange(sender, e)
     End Sub
 
-
     Private Sub btnTaskChoiceAsFileTo_File_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsFileTo_File.Click
         'feladatválasztó ablakot hívja meg, a filing a meghívott ablak bezárása után nyílik meg a FileWithChosenTaskMetadata útján
         Dim TaskChooser As New SPTaxonomy_wWForms_TreeView.SPTreeview
         AddHandler TaskChooser.ShowTaskSelected, AddressOf FileWithChosenTaskMetadata
         TaskChooser.Show()
     End Sub
-    Private Function OverwriteFileQuestion(targetFileName As String, Random As String) As MsgBoxResult
+    Private Shared Function OverwriteFileQuestion(targetFileName As String, Random As String) As MsgBoxResult
         Dim result = MsgBox("The filename " & targetFileName & " already exists in the folder." & Environment.NewLine &
                                                      "Do you want to overwrite (YES) or " & Environment.NewLine & "save the name with a new ending (NO = " & Random & ")?", MsgBoxStyle.YesNo)
         Return result
     End Function
-    Private Function CheckUnicity(targetPath As String, targetFileName As String) As String
+    Private Shared Function CheckUnicity(targetPath As String, targetFileName As String) As String
         Dim ReturnName As String = targetPath & targetFileName
         If SPHelper.SPFileFolder.TryGetFolderByServerRelativeUrl(Globals.ThisAddIn.Connection.Context, targetPath & targetFileName) Then
             Dim random = HPHelper.StringRelated.RandomCharGet(5)
@@ -321,12 +357,12 @@ Public Class HUI_TaskDocFormRegion
         InterimDoc = GetDataFromHistoryItem(InterimDoc, cbFileHistory)
         Return InterimDoc
     End Function
-    Private Function IsTaskSelectedAsFileHistoryItem() As Boolean
+    Public Function IsTaskSelectedAsFileHistoryItem() As Boolean
         Dim SelectedHistory As HistoryItem = cbFileHistory.SelectedItem
         If IsNothing(SelectedHistory) Then Return False
         If Not IsNothing(SelectedHistory.Task) Then Return True Else Return False
     End Function
-    Private Function ReturnTaskFromHistoryItem(cbHistory As ComboBox) As TaskClass
+    Public Function ReturnTaskFromHistoryItem(cbHistory As ComboBox) As TaskClass
         Dim SelectedHistory As HistoryItem = cbHistory.SelectedItem
         If IsNothing(SelectedHistory) Then Return Nothing
         Return SelectedHistory.Task
@@ -477,5 +513,43 @@ Public Class HUI_TaskDocFormRegion
         targetListItem("EmSensitivity") = _MailItem.Sensitivity
         targetListItem("Priority") = _MailItem.Priority
     End Sub
+    Public Function GetTaskDataFromSP(taskID As Integer) As CSOM.ListItem
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim TaskLibrarytoUpload = MySPHelper.Context.Web.Lists.GetByTitle(TaskClass.ListName)
+        MySPHelper.Context.Load(TaskLibrarytoUpload)
+        Dim NewTask As CSOM.ListItem = TaskLibrarytoUpload.GetItemById(taskID)
+        MySPHelper.Context.Load(NewTask)
+        MySPHelper.Context.Load(TaskLibrarytoUpload.Fields)
+        MySPHelper.Context.Load(NewTask.AttachmentFiles)
+        MySPHelper.Context.Load(NewTask.FieldValuesAsText)
+        MySPHelper.Context.ExecuteQuery()
+        Return NewTask
+    End Function
+    Public Async Function GetTaskDataFromSPAsync(taskID As Integer) As Threading.Tasks.Task(Of CSOM.ListItem)
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim TaskLibrarytoUpload = MySPHelper.Context.Web.Lists.GetByTitle(TaskClass.ListName)
+        MySPHelper.Context.Load(TaskLibrarytoUpload)
+        Dim NewTask As CSOM.ListItem = TaskLibrarytoUpload.GetItemById(taskID)
+        MySPHelper.Context.Load(NewTask)
+        MySPHelper.Context.Load(TaskLibrarytoUpload.Fields)
+        MySPHelper.Context.Load(NewTask.AttachmentFiles)
+        MySPHelper.Context.Load(NewTask.FieldValuesAsText)
+        Await MySPHelper.Context.ExecuteQueryAsync()
+        Return NewTask
+    End Function
 
+    Private Sub TabCreateTask_Enter(sender As Object, e As EventArgs) Handles TabCreateTask.Enter
+        Me.LastTabPage = Tab.CreateNewTask
+    End Sub
+    Private Sub TabFileAsDoc_Enter(sender As Object, e As EventArgs) Handles TabFileAsDoc.Enter
+        Me.LastTabPage = Tab.FileToDocLibrary
+    End Sub
+
+    'Private Sub TabControl1_Selected(sender As Object, e As TabControlEventArgs) Handles TabControl1.Selected
+    '    If TabControl1.SelectedTab.Equals(TabFileAsDoc) Then
+    '        Me.LastTabPage = Tab.FileToDocLibrary
+    '    ElseIf TabControl1.SelectedTab.Equals(TabCreateTask) Then
+    '        Me.LastTabPage = Tab.FileToDocLibrary
+    '    End If
+    'End Sub
 End Class

@@ -6,6 +6,7 @@ Imports System.Text.RegularExpressions
 Imports Microsoft.Office.Interop.Outlook
 Imports SPHelper.SPHUI
 Imports SPHelper.SPFileFolder
+Imports CSOM = Microsoft.SharePoint.Client
 
 Module OutlookApplicationHelper
     Public Const Separator = "|"
@@ -259,13 +260,48 @@ Module OutlookApplicationHelper
         Next
         Return result
     End Function
-
+    Public Function ConvertPriority(InputChoice As String) As OlImportance
+        Dim result As New OlImportance
+        If IsNothing(InputChoice) Then Return OlImportance.olImportanceNormal
+        Select Case InputChoice
+            Case "(2) Normal"
+                result = OlImportance.olImportanceNormal
+            Case "(1) High"
+                result = OlImportance.olImportanceHigh
+            Case "(3) Low"
+                result = OlImportance.olImportanceLow
+        End Select
+        Return result
+    End Function
 #End Region
 #Region "Regexp Related Functions"
     Private Function MatchesToListofString(input As MatchCollection) As List(Of String)
         Dim listofmatches As List(Of Match) = input.Cast(Of Match).ToList
         Return listofmatches.Select(Function(m) m.Value).ToList
     End Function
+
+    Public Function RemoveAllFromBody(Input As String) As String
+        If String.IsNullOrEmpty(Input) Then Return String.Empty
+        Input = RemoveTaskTag(Input)
+        Input = RemoveMatterTag(Input)
+        Do While Input.Contains(Separator & Separator)
+            Input = Input.Replace(Separator & Separator, Separator)
+        Loop
+        Return Input
+    End Function
+    Public Function RemoveTaskTag(Input As String) As String
+        If String.IsNullOrEmpty(Input) Then Return String.Empty
+        Dim result = Regex.Match(Input, RE.TaskRegExp)
+        Input = Strings.Replace(Input, result.Value, String.Empty)
+        Return Input
+    End Function
+    Public Function RemoveMatterTag(Input As String) As String
+        If String.IsNullOrEmpty(Input) Then Return String.Empty
+        Dim result = Regex.Match(Input, RE.MatterRegExp)
+        Input = Strings.Replace(Input, result.Value, String.Empty)
+        Return Input
+    End Function
+
 #End Region
 #Region "Handling saving attachments and mail"
     Public Function GetAllAttachmentNames(sourceMailItem As MailItem) As List(Of String)
@@ -275,7 +311,7 @@ Module OutlookApplicationHelper
         Next
         Return result
     End Function
-   
+
     Private Function IsThisLogo(attachment As Microsoft.Office.Interop.Outlook.Attachment)
         If attachment.FileName.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) AndAlso attachment.Size < 25 * 1024 AndAlso
                 (attachment.FileName.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase) Or
@@ -380,6 +416,176 @@ Module OutlookApplicationHelper
         If IsNothing(_MailItem) Then Return Nothing
         Return ValidateFileName(_MailItem.Subject & "_" & HPHelper.StringRelated.RandomCharGet(4))
     End Function
-#End Region
+    Private Function GetResponseBodyFormat(mailItem As MailItem) As String
+        Select Case mailItem.BodyFormat
+            Case OlBodyFormat.olFormatHTML, OlBodyFormat.olFormatUnspecified
+                Return mailItem.HTMLBody
+            Case OlBodyFormat.olFormatPlain
+                Return mailItem.Body
+        End Select
+        Return mailItem.HTMLBody
+    End Function
+    Private Sub ChangeRtfToHtml(mailItem As MailItem)
+        If mailItem.BodyFormat = OlBodyFormat.olFormatRichText Then
+            mailItem.BodyFormat = OlBodyFormat.olFormatHTML
+            mailItem.Save()
+        End If
+    End Sub
 
+    Private Function GetMatterIDIdentifiers(taskBase As CSOM.ListItem) As String
+        Dim resultArray As CSOM.FieldLookupValue() = taskBase(MatterClass.RefColumnInternalName)
+        Dim result As String = String.Empty
+        For Each matter As CSOM.FieldLookupValue In resultArray
+            If IsNothing(matter.LookupId) Then Continue For
+            If matter.LookupId = 0 Then Continue For
+            Dim valuetoAdd = "M`[" & matter.LookupId & "]"
+            If Not String.IsNullOrWhiteSpace(result) Then result += "|" & valuetoAdd Else result += valuetoAdd
+        Next
+        Return result
+    End Function
+    Private Function GetTaskIDIdentifier(taskBase As CSOM.ListItem) As String
+        Dim taskID = taskBase("ID")
+        If String.IsNullOrWhiteSpace(taskID) OrElse taskID = "0" Then Return String.Empty Else Return "T`[" & taskID & "]"
+    End Function
+    Private Function InsertIdentifiersfromTask(mailItem As MailItem, taskBase As CSOM.ListItem, Optional Signature As Boolean = False) As String
+        Dim ResultRaw = GetTaskIDIdentifier(taskBase)
+        ResultRaw += GetMatterIDIdentifiers(taskBase)
+        Dim result As String = String.Empty
+        Select Case mailItem.BodyFormat
+            Case OlBodyFormat.olFormatHTML, OlBodyFormat.olFormatUnspecified
+                Dim resultID = "<span style=""font-size:1px; color:white"">" & ResultRaw & "</span>"
+                If Signature = True Then result = InsertIDintoHTML(GetSignature(mailItem.BodyFormat), resultID) Else result = resultID
+            Case OlBodyFormat.olFormatPlain
+                result = Environment.NewLine & ResultRaw
+                If Signature = True Then result = GetSignature(mailItem.BodyFormat) & result
+            Case OlBodyFormat.olFormatRichText
+                Dim resultID = "\pard\sa200\sl276\slmult1\cf1\fs2" & ResultRaw & "]\par"
+                If Signature = True Then
+                    Dim resultsig = GetSignature(mailItem.BodyFormat)
+                    resultsig = resultsig.Substring(0, resultsig.Length - 1) & resultID & "}"
+                Else result = resultID
+                End If
+        End Select
+        Return result
+        'TaskRegExp = "T\`\[(.*?)\d\]"
+        'MatterRegExp = "M\`\[(.*?)\d\]"
+        'DocRegExp = "D\`\[(.*?)\d\]" 
+    End Function
+    Private Function InsertIDintoHTML(HTMLToInserTto As String, HtmlToInsert As String) As String
+        Return HTMLToInserTto.Replace("</body>", "<br>" & HtmlToInsert & "</body>")
+    End Function
+
+    Private Sub AddMailItemAttachments(taskBase As CSOM.ListItem, ByRef mailItem As MailItem)
+        For Each att In taskBase.AttachmentFiles
+            'Az eredeti implementációban a forrásemaileket `SRC` jelöléssel csatolta csatolmányként a Taskhoz, így ezzel szűrtük ki, hogy azt ne tegye a válaszemailbe
+            'Most már ugyanez RelatedItems-ként van mentve
+            If att.FileName.StartsWith("`SRC`") Then Continue For
+            Dim _FromFileInfo As CSOM.FileInformation = CSOM.File.OpenBinaryDirect(Globals.ThisAddIn.Connection.Context, att.ServerRelativeUrl)
+            Dim _FileUrl = Path.Combine(Globals.ThisAddIn.TempPath, att.FileName)
+            Using _FileStream = System.IO.File.Create(_FileUrl)
+                _FromFileInfo.Stream.CopyTo(_FileStream)
+            End Using
+            mailItem.Attachments.Add(_FileUrl, OlAttachmentType.olByValue)
+        Next
+    End Sub
+
+    Private Sub AddRelatedItemsAttachments(taskBase As CSOM.ListItem, ByRef mailItem As MailItem)
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim tryRelatedItem = AddRelatedItems(taskBase("RelatedItems"))
+        If Not IsNothing(tryRelatedItem) Then
+            For Each item In tryRelatedItem
+                'Dim webId = New Guid(item.WebId) '-mivel egyéb SP-ről nem fogunk menteni
+                Dim _List As CSOM.List = MySPHelper.Context.Web.Lists.GetById(New Guid(item.ListId))
+                Dim _Item As CSOM.ListItem = _List.GetItemById(item.ItemId)
+                Dim _File As CSOM.File = _Item.File
+                MySPHelper.Context.Load(_List)
+                MySPHelper.Context.Load(_Item, Function(x) x.File)
+                MySPHelper.Context.Load(_File)
+                MySPHelper.Context.ExecuteQuery()
+                If Not IsNothing(_File) Then
+                    Dim _FileUrl = Path.Combine(Globals.ThisAddIn.TempPath, _File.Name)
+                    Using _FileStream = System.IO.File.Create(_FileUrl)
+                        Using _BinaryReader = New BinaryReader(_FileStream)
+                            _BinaryReader.BaseStream.CopyTo(_FileStream)
+                            '_File.OpenBinaryStream.Value.CopyTo(_FileStream)
+                        End Using
+                    End Using
+                    mailItem.Attachments.Add(_FileUrl, OlAttachmentType.olByValue)
+                End If
+            Next
+        End If
+    End Sub
+
+    Private Sub CreateNewMailItemfromTask(taskBase As Microsoft.SharePoint.Client.ListItem, Completed As Boolean)
+        Dim mailItem As Outlook.MailItem = DirectCast(Globals.ThisAddIn.Application.CreateItem(Outlook.OlItemType.olMailItem), Outlook.MailItem)
+        ChangeRtfToHtml(mailItem)
+        Dim BodyFormat = taskBase("EmType")
+        Try
+            mailItem.BodyFormat = BodyFormat
+        Catch ex As System.Exception
+            mailItem.BodyFormat = OlBodyFormat.olFormatHTML
+        End Try
+        Dim RecsString As String = taskBase("EmFrom")
+        If Not String.IsNullOrEmpty(RecsString) Then
+            For Each rec In RecsString.Split(";")
+                Dim this = mailItem.Recipients.Add(rec)
+                this.Type = OlMailRecipientType.olTo
+            Next
+            mailItem.Recipients.ResolveAll()
+
+        End If
+        Dim RecsStringCC As String = taskBase("EmCCSMTPAddress")
+        If Not String.IsNullOrEmpty(RecsStringCC) Then
+            For Each rec In RecsString.Split(";")
+                Dim this = mailItem.Recipients.Add(rec)
+                this.Type = OlMailRecipientType.olCC
+            Next
+            mailItem.Recipients.ResolveAll()
+            mailItem.CC = taskBase("EmCC")
+        End If
+        mailItem.Subject = taskBase("EmSubject")
+        mailItem.Display()
+
+        Dim OldText = RemoveAllFromBody(taskBase("EmBody"))
+        Dim InsertIDs = InsertIdentifiersfromTask(mailItem, taskBase, True)
+        Dim ResponseText = taskBase("Draft_x0020_Reply_x0020_Body")
+        Select Case mailItem.BodyFormat
+            Case OlBodyFormat.olFormatHTML, OlBodyFormat.olFormatUnspecified
+                mailItem.HTMLBody = ResponseText & InsertIDs & OldText         'Ha kell Parse HTML = StandardHPHelper.MergeHtmlBodiesIntoOneHtml(összes fájl)
+            Case OlBodyFormat.olFormatPlain
+                mailItem.Body = ResponseText & InsertIDs & OldText
+        End Select
+        mailItem.Importance = ConvertPriority(taskBase("Priority"))
+        Dim Sensitivity = taskBase("EmSensitivity")
+        If Not IsNothing(Sensitivity) Then mailItem.Sensitivity = Sensitivity
+        AddMailItemAttachments(taskBase, mailItem)
+        'Globals.ThisAddIn.LastTaskFiled = IIf(Completed, "C" + Convert.ToString(taskBase("ID")), Convert.ToString(taskBase("ID")))
+        mailItem.Save()
+    End Sub
+    Private Sub ReplyToMailItemBasedonTask(taskBase As CSOM.ListItem, ByRef mailItem As MailItem, TaskLibrarytoUpload As CSOM.List, Completed As Boolean)
+        Dim response As MailItem = mailItem.ReplyAll
+        ChangeRtfToHtml(response)
+        response.BodyFormat = mailItem.BodyFormat
+        Dim OldText = InsertIdentifiersfromTask(response, taskBase, True) & RemoveAllFromBody(GetResponseBodyFormat(mailItem)) 'InsertIDintoHTML(OAI.RemoveAllFromBody(GetResponseBodyFormat(mailItem)), InsertIdentifiers(response, taskBase))
+        Dim ResponseText = taskBase("Draft_x0020_Reply_x0020_Body")
+        If taskBase("EmType") <> mailItem.BodyFormat Then
+            If taskBase("EmType") = OlBodyFormat.olFormatHTML And (mailItem.BodyFormat = OlBodyFormat.olFormatPlain Or mailItem.BodyFormat = OlBodyFormat.olFormatUnspecified) Then ResponseText = Regex.Replace(ResponseText, "<.*?>", String.Empty)
+        End If
+        Select Case response.BodyFormat
+            Case OlBodyFormat.olFormatHTML, OlBodyFormat.olFormatUnspecified
+                response.HTMLBody = ResponseText & OldText
+            Case OlBodyFormat.olFormatPlain
+                response.Body = ResponseText & OldText
+        End Select
+        response.Subject = RemoveTaskTag(response.Subject) ' & "                                                                   T`[" & taskBase("ID") & "]"
+        AddMailItemAttachments(taskBase, response)
+        response.Display()
+        'Globals.ThisAddIn.LastTaskFiled = IIf(Completed, "C" + Convert.ToString(taskBase("ID")), Convert.ToString(taskBase("ID")))
+        response.Save() 'Töröljük?
+        'Trace.WriteLine("ReplyToMailItemBasedonTask_mailItemSave AFTER: " & mailItem.Body)
+    End Sub
+
+
+
+#End Region
 End Module
