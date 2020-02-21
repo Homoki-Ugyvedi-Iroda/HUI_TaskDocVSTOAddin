@@ -41,23 +41,51 @@
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.Tab1 = Factory.CreateRibbonTab()
-        Me.Group1 = Factory.CreateRibbonGroup()
+        Me.Tab1 = Me.Factory.CreateRibbonTab
+        Me.Task = Me.Factory.CreateRibbonGroup
+        Me.btnReplyFromTask = Me.Factory.CreateRibbonButton
+        Me.btnReplyToThisEmailFromTask = Me.Factory.CreateRibbonButton
+        Me.cbxWithCompleted = Me.Factory.CreateRibbonCheckBox
         Me.Tab1.SuspendLayout()
-        Me.Group1.SuspendLayout()
+        Me.Task.SuspendLayout()
         Me.SuspendLayout()
         '
         'Tab1
         '
+        Me.Tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office
+        Me.Tab1.Groups.Add(Me.Task)
+        Me.Tab1.Label = "TabAddIns"
         Me.Tab1.Name = "Tab1"
-        Me.tab1.ControlId.ControlIdType = Microsoft.Office.Tools.Ribbon.RibbonControlIdType.Office
-        Me.tab1.ControlId.OfficeId = "TabAddIns"
-        Me.Tab1.Groups.Add(Me.Group1)
         '
-        'Group1
+        'Task
         '
-        Me.Group1.Label = "Group1"
-        Me.Group1.Name = "Group1"
+        Me.Task.Items.Add(Me.btnReplyFromTask)
+        Me.Task.Items.Add(Me.btnReplyToThisEmailFromTask)
+        Me.Task.Items.Add(Me.cbxWithCompleted)
+        Me.Task.Label = "Task"
+        Me.Task.Name = "Task"
+        '
+        'btnReplyFromTask
+        '
+        Me.btnReplyFromTask.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge
+        Me.btnReplyFromTask.Image = Global.HUI_TaskDocVSTOAddin.My.Resources.Resources.TaskList_48x
+        Me.btnReplyFromTask.Label = "Create reply e-mail from task"
+        Me.btnReplyFromTask.Name = "btnReplyFromTask"
+        Me.btnReplyFromTask.ShowImage = True
+        '
+        'btnReplyToThisEmailFromTask
+        '
+        Me.btnReplyToThisEmailFromTask.ControlSize = Microsoft.Office.Core.RibbonControlSize.RibbonControlSizeLarge
+        Me.btnReplyToThisEmailFromTask.Image = Global.HUI_TaskDocVSTOAddin.My.Resources.Resources.InsertMark_12990_32
+        Me.btnReplyToThisEmailFromTask.Label = "Reply to selected email from task"
+        Me.btnReplyToThisEmailFromTask.Name = "btnReplyToThisEmailFromTask"
+        Me.btnReplyToThisEmailFromTask.ShowImage = True
+        '
+        'cbxWithCompleted
+        '
+        Me.cbxWithCompleted.Checked = True
+        Me.cbxWithCompleted.Label = "Complete task with reply"
+        Me.cbxWithCompleted.Name = "cbxWithCompleted"
         '
         'HUITaskDocRibbon
         '
@@ -66,14 +94,17 @@
         Me.Tabs.Add(Me.Tab1)
         Me.Tab1.ResumeLayout(False)
         Me.Tab1.PerformLayout()
-        Me.Group1.ResumeLayout(False)
-        Me.Group1.PerformLayout()
+        Me.Task.ResumeLayout(False)
+        Me.Task.PerformLayout()
         Me.ResumeLayout(False)
 
     End Sub
 
     Friend WithEvents Tab1 As Microsoft.Office.Tools.Ribbon.RibbonTab
-    Friend WithEvents Group1 As Microsoft.Office.Tools.Ribbon.RibbonGroup
+    Friend WithEvents Task As Microsoft.Office.Tools.Ribbon.RibbonGroup
+    Friend WithEvents btnReplyFromTask As Microsoft.Office.Tools.Ribbon.RibbonButton
+    Friend WithEvents btnReplyToThisEmailFromTask As Microsoft.Office.Tools.Ribbon.RibbonButton
+    Friend WithEvents cbxWithCompleted As Microsoft.Office.Tools.Ribbon.RibbonCheckBox
 End Class
 
 Partial Class ThisRibbonCollection

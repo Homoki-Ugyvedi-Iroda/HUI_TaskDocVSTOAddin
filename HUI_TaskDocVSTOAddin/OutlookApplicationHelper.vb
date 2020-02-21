@@ -516,7 +516,7 @@ Module OutlookApplicationHelper
         End If
     End Sub
 
-    Private Sub CreateNewMailItemfromTask(taskBase As Microsoft.SharePoint.Client.ListItem, Completed As Boolean)
+    Public Sub CreateNewMailItemfromTask(taskBase As Microsoft.SharePoint.Client.ListItem, Completed As Boolean)
         Dim mailItem As Outlook.MailItem = DirectCast(Globals.ThisAddIn.Application.CreateItem(Outlook.OlItemType.olMailItem), Outlook.MailItem)
         ChangeRtfToHtml(mailItem)
         Dim BodyFormat = taskBase("EmType")
@@ -562,7 +562,7 @@ Module OutlookApplicationHelper
         'Globals.ThisAddIn.LastTaskFiled = IIf(Completed, "C" + Convert.ToString(taskBase("ID")), Convert.ToString(taskBase("ID")))
         mailItem.Save()
     End Sub
-    Private Sub ReplyToMailItemBasedonTask(taskBase As CSOM.ListItem, ByRef mailItem As MailItem, TaskLibrarytoUpload As CSOM.List, Completed As Boolean)
+    Public Sub ReplyToMailItemBasedonTask(taskBase As CSOM.ListItem, ByRef mailItem As MailItem, Completed As Boolean)
         Dim response As MailItem = mailItem.ReplyAll
         ChangeRtfToHtml(response)
         response.BodyFormat = mailItem.BodyFormat

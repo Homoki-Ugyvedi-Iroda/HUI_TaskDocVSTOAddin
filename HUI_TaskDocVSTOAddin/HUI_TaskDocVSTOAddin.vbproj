@@ -393,6 +393,9 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="OutlookApplicationHelper.vb" />
+    <Compile Include="RibbonforXmlFormat.vb">
+      <XmlRibbon>true</XmlRibbon>
+    </Compile>
     <Compile Include="ThisAddIn.vb">
       <SubType>Code</SubType>
     </Compile>
@@ -407,6 +410,9 @@
       <DependentUpon>ThisAddIn.Designer.xml</DependentUpon>
     </Compile>
     <Compile Include="My Project\AssemblyInfo.vb" />
+    <EmbeddedResource Include="HUITaskDocRibbon.resx">
+      <DependentUpon>HUITaskDocRibbon.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="HUI_TaskDocFormRegion.resx">
       <DependentUpon>HUI_TaskDocFormRegion.vb</DependentUpon>
     </EmbeddedResource>
@@ -444,6 +450,15 @@
       <Project>{ce9a263d-5997-402c-9800-66ee09cb8850}</Project>
       <Name>SPTaxonomy_wWForms_TreeView</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\TaskList_48x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\InsertMark_12990_32.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="RibbonforXmlFormat.xml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
