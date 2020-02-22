@@ -3,6 +3,7 @@ Imports System.IO
 Imports System.Windows.Forms
 Imports Microsoft.Office.Interop.Outlook
 Imports SPHelper.SPHUI
+Imports SPHelper.SPFileFolder
 Imports CSOM = Microsoft.SharePoint.Client
 
 
@@ -114,24 +115,18 @@ Public Class HUI_TaskDocFormRegion
         cbFileEmailOrAttachments.SelectedItem = FullEmail
     End Sub
 
-#Region "CreateNewTask"
-    Private Async Function CreateAndFileFile(FileLeafTarget As String, InterimDoc As DocClass) As Threading.Tasks.Task(Of CSOM.ListItem)
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim DocLibrarytoUpload = DocClass.ClientDocumentLibraryName
-
-        Dim _ListItem As CSOM.ListItem
-        'Lementi a csatolmányt egy önálló fájlként a kiválasztott előzmény task adatai alapján (matter, partners, keywords, projectorsystem)
-        Using fstream As New FileStream(InterimDoc.FilePathLocalForUploading, FileMode.Open)
-            _ListItem = Await SPHelper.SaveToDocLibrary.SaveAndUploadAsync(Globals.ThisAddIn.Connection.Context, fstream, FileLeafTarget, DocLibrarytoUpload)
-        End Using
-        MySPHelper.SetListItemValuestoDocumentClassValues(_ListItem, InterimDoc)
-        Return _ListItem
-    End Function
+#Region "CreateNewTask_Tab"
+    ''' <summary>
+    ''' A history listában lévő taskok közül választ, és ez a kiválasztott task szolgál alapjául a metaadatokat illetően egy új taskhoz, 
+    ''' ami új taskhoz hozzáfűzi az aktuális emailt vagy csatolmánytg
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
     Private Async Sub btnHistoryChosenAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnHistoryChosenAsTemplateForNewTask.Click
         If IsNothing(cbTaskChosenHistoryNewTask.SelectedValue) Then Exit Sub
         Dim InterimDoc As DocClass = GetDocClassFromFileTab(ReturnSavedFileName())
-        Dim FileLeafTarget As String = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FileName)
-        Await CreateAndFileFile(FileLeafTarget, InterimDoc)
+        Dim FileLeafTarget As String = CheckUnicityFileNameInFolder(Globals.ThisAddIn.Connection.Context, InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+        Await CreateAndFileAsFile(FileLeafTarget, InterimDoc)
         'Mentse le egy új taskként a korábbi adataival, majd nyissa meg egy böngészőablakban az új taskot!
         CreateNewTaskBasedOnOld(ReturnTaskFromHistoryItem(cbTaskChosenHistoryNewTask))
         'If IsTaskSelectedAsFileHistoryItem() Then
@@ -139,46 +134,77 @@ Public Class HUI_TaskDocFormRegion
         '    MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, NewTask.ID, FileLeafTarget)
         'End If
     End Sub
-    Private Sub btnExistingTaskChoiceAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsTemplateForNewTask.Click
+    ''' <summary>
+    ''' Meglévő taskot kijelöl és utána ez a task szolgál egy új task alapjául a metaadatokat illetően,
+    ''' ami új taskhoz hozzáfűzi az aktuális emailt vagy csatolmányt.
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    Private Async Sub btnExistingTaskChoiceAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsTemplateForNewTask.Click
         Dim TaskChooser As New SPTaxonomy_wWForms_TreeView.SPTreeview
         TaskChooser.CopyTreeNodes(Me.TaskTreeView, TaskChooser.TreeViewBase)
-        AddHandler TaskChooser.ShowTaskSelected, AddressOf NewTaskWithChosenTaskMetadata
-        TaskChooser.Show()
-    End Sub
-    Private Async Sub NewTaskWithChosenTaskMetadata(taskID As Integer)
+        'AddHandler TaskChooser.ShowTaskSelected, AddressOf NewTaskWithChosenTaskMetadata
+        TaskChooser.ShowDialog()
         Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim SourceTask As TaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = taskID)
+        Dim SourceTask As TaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = TaskChooser.SelectedTaskID)
         Dim InterimDoc As DocClass = GetDocClassFromSelectedTask(SourceTask, ReturnSavedFileName())
-        Dim FileLeafTarget As String = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FileName)
-        Dim _ListItem As CSOM.ListItem = Await CreateAndFileFile(FileLeafTarget, InterimDoc)
+        Dim FileLeafTarget As String = CheckUnicityFileNameInFolder(MySPHelper.Context, InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+        Dim _ListItem As CSOM.ListItem = Await CreateAndFileAsFile(FileLeafTarget, InterimDoc)
         CreateNewTaskBasedOnOld(SourceTask)
         MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, SourceTask.ID, FileLeafTarget)
         AddToHistoryFromSelectedTaskAndClear(SourceTask)
-    End Sub
-    Private Sub btnCreateNewTask_Click(sender As Object, e As EventArgs) Handles btnCreateNewTask.Click
-        'létrehoz egy új üres taskot, amihez csatolja ezt az emailt/csatolmányt és annak megfelelő, SP szerinti új task ablak megnyitása? 
-        Dim TaskChooser As New SPTaxonomy_wWForms_TreeView.SPTreeview
-        TaskChooser.CopyTreeNodes(Me.TaskTreeView, TaskChooser.TreeViewBase)
-        AddHandler TaskChooser.ShowTaskSelected, AddressOf NewTaskWithEmail
-        TaskChooser.Show()
-    End Sub
-    Private Async Sub NewTaskWithEmail(taskID As Integer)
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim SourceTask As TaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = taskID)
-        Dim InterimDoc As DocClass = GetDocClassFromFileTab(ReturnSavedFileName())
-        Dim FileLeafTarget As String = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FileName)
-        Dim _ListItem As CSOM.ListItem = Await CreateAndFileFile(FileLeafTarget, InterimDoc)
-        CreateNewTask()
-        MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, SourceTask.ID, FileLeafTarget)
-        AddToHistoryFromSelectedTaskAndClear(SourceTask)
-    End Sub
 
+    End Sub
+    '''' <summary>
+    '''' A btnExistingTaskChoiceAsTemplateForNewTask_Click által meghívott aszinkron végrehajtó rész
+    '''' </summary>
+    '''' <param name="taskID"></param>
+    'Private Async Sub NewTaskWithChosenTaskMetadata(taskID As Integer)
+    '    Dim MySPHelper = Globals.ThisAddIn.Connection
+    '    Dim SourceTask As TaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = taskID)
+    '    Dim InterimDoc As DocClass = GetDocClassFromSelectedTask(SourceTask, ReturnSavedFileName())
+    '    Dim FileLeafTarget As String = CheckUnicityFileNameInFolder(MySPHelper.Context, InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+    '    Dim _ListItem As CSOM.ListItem = Await CreateAndFileAsFile(FileLeafTarget, InterimDoc)
+    '    CreateNewTaskBasedOnOld(SourceTask)
+    '    MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, SourceTask.ID, FileLeafTarget)
+    '    AddToHistoryFromSelectedTaskAndClear(SourceTask)
+    'End Sub
+    ''' <summary>
+    ''' btnCreateNewTask_Click által meghívott aszinkron végrehajtó rész
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
+    Private Async Sub btnCreateNewTask_Click(sender As Object, e As EventArgs) Handles btnCreateNewTask.Click
+        'Létrehoz egy új üres taskot, amihez csatolja ezt az emailt/csatolmányt és annak megfelelő, SP szerinti új task ablak megnyitása. 
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim InterimDoc As DocClass = GetDocClassFromFileTab(ReturnSavedFileName())
+        Dim FileLeafTarget As String = CheckUnicityFileNameInFolder(MySPHelper.Context, InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+        Dim _ListItem As CSOM.ListItem = Await CreateAndFileAsFile(FileLeafTarget, InterimDoc)
+        Dim NewTask = CreateNewTask()
+        MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, NewTask.ID, FileLeafTarget)
+        AddToHistoryFromSelectedTaskAndClear(NewTask)
+    End Sub
+    'Private Async Sub NewTaskWithEmail(taskID As Integer)
+    '    Dim MySPHelper = Globals.ThisAddIn.Connection
+    '    Dim SourceTask As TaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = taskID)
+    '    Dim InterimDoc As DocClass = GetDocClassFromFileTab(ReturnSavedFileName())
+    '    Dim FileLeafTarget As String = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+    '    Dim _ListItem As CSOM.ListItem = Await CreateAndFileAsFile(FileLeafTarget, InterimDoc)
+    '    CreateNewTask()
+    '    MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, SourceTask.ID, FileLeafTarget)
+    '    AddToHistoryFromSelectedTaskAndClear(SourceTask)
+    'End Sub
 #End Region
-#Region "FileToDocLibrary"
+#Region "FileToDocLibrary_Tab"
+    ''' <summary>
+    ''' A FileToDocLibrary_Tab adatai alapján lementi az emailt vagy csatolmányát, majd nyissa meg a böngészőablakban a lementett új fájlt.
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
     Private Async Sub btnFileToDocLibrary_Click(sender As Object, e As EventArgs) Handles btnFileToDocLibrary.Click
         Dim InterimDoc As DocClass = GetDocClassFromFileTab(ReturnSavedFileName())
-        Dim FileLeafTarget As String = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FileName)
-        Dim _ListItem As CSOM.ListItem = Await CreateAndFileFile(FileLeafTarget, InterimDoc)
+        Dim FileLeafTarget As String = CheckUnicityFileNameInFolder(Globals.ThisAddIn.Connection.Context, InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+        Dim _ListItem As CSOM.ListItem = Await CreateAndFileAsFile(FileLeafTarget, InterimDoc)
         If IsTaskSelectedAsFileHistoryItem() Then
             Dim MySPHelper = Globals.ThisAddIn.Connection
             'Ha volt korábbi task kiválasztva a cbFileHistory-ban, akkor fűzze hozzá a taskhoz related item-ként az új itemet
@@ -189,56 +215,8 @@ Public Class HUI_TaskDocFormRegion
         'Nyissa meg egy böngészőablakban az új file-t!
         DocClass.OpenDocToEdit(_ListItem.Id)
     End Sub
-    Public Shared Async Sub FileToDocLibraryAsFile(InterimDoc As DocClass, Optional taskID As Integer = 0)
-        Dim FileLeafTarget As String = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FilePathLocalForUploading)
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim DocLibrarytoUpload = DocClass.ClientDocumentLibraryName
-        Dim _ListItem As CSOM.ListItem
-        'Lementi a csatolmányt egy önálló fájlként a kiválasztott előzmény task adatai alapján (matter, partners, keywords, projectorsystem)
-        Using fstream As New FileStream(InterimDoc.FilePathLocalForUploading, FileMode.Open)
-            _ListItem = Await SPHelper.SaveToDocLibrary.SaveAndUploadAsync(Globals.ThisAddIn.Connection.Context, fstream, FileLeafTarget, DocLibrarytoUpload)
-        End Using
-        MySPHelper.SetListItemValuestoDocumentClassValues(_ListItem, InterimDoc)
-        If taskID <> 0 Then
-            MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, taskID, FileLeafTarget)
-        End If
-
-    End Sub
-    Public Shared Function FillDocClassWithRecord(_record As ThisAddIn.ControlValuesGiven, localPathName As String) As DocClass
-        Dim NewDoc As New DocClass With
-                {.FilePathLocalForUploading = localPathName, .FileName = Path.GetFileName(localPathName),
-                .TitleOrTaskName = _record.Title, .PathtoSaveTo = _record.Path, .Matter = _record.Matter, .Persons = _record.Partners}
-        If Not IsNothing(_record.Task) Then
-            With NewDoc
-                If Not IsNothing(_record.Task.Matter) Then .Matter = _record.Task.Matter
-                If Not IsNothing(_record.Task.Persons) Then .Persons = _record.Task.Persons
-                If Not IsNothing(_record.Task.TitleOrTaskName) Then .TitleOrTaskName = _record.Task.TitleOrTaskName
-                If Not IsNothing(_record.Task.ProjectSystems) Then .ProjectSystems = _record.Task.ProjectSystems
-                If Not IsNothing(_record.Task.Keywords) Then .Keywords = _record.Task.Keywords
-            End With
-        End If
-        Return NewDoc
-    End Function
-
-
-    Private Async Sub FileWithChosenTaskMetadata(taskID As Integer)
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim SourceTask As TaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = taskID)
-        Dim InterimDoc As DocClass = GetDocClassFromSelectedTask(SourceTask, ReturnSavedFileName())
-        Dim FileLeafTarget As String = CheckUnicity(InterimDoc.PathtoSaveTo, InterimDoc.FileName)
-        Dim _ListItem As CSOM.ListItem = Await CreateAndFileFile(FileLeafTarget, InterimDoc)
-        MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, SourceTask.ID, FileLeafTarget)
-        AddToHistoryFromSelectedTaskAndClear(SourceTask)
-        'Nyissa meg egy böngészőablakban az új file-t!
-        DocClass.OpenDocToEdit(_ListItem.Id)
-    End Sub
-
-    Private Function ReturnUrlToOpen() As String
-        Dim GetTargetUrlFolder = "/" & DocClass.ClientDocumentLibraryFileRef & "/" & tbPathToSaveTo.Text
-        Dim TargetLibrary = DocClass.ClientDocumentLibraryName
-        Dim URLToOpen = SPHelper.SPFileFolder.FilePathValidator(My.Settings.spUrl & GetTargetUrlFolder)
-        Return URLToOpen
-    End Function
+#End Region
+#Region "TaskDocFormRegion egyéb controlok és eventek kezelése"
     Private Sub btnAddPartnerFile_Click(sender As Object, e As EventArgs) Handles btnAddPartnerFile.Click
         If IsNothing(cbPartner.SelectedValue) Then Exit Sub
         lbTotalPartners.Items.Add(cbPartner.SelectedItem)
@@ -281,9 +259,6 @@ Public Class HUI_TaskDocFormRegion
         If String.IsNullOrWhiteSpace(NewDirectory) Then Exit Sub
         tbPathToSaveTo.Text = NewDirectory
     End Sub
-    Private Sub CheckIfPathChangesForPartnerChange(sender As Object, e As EventArgs)
-        cbMatter_SelectedIndexChanged(sender, e)
-    End Sub
     Private Sub btnChangePartnerOrder_Click(sender As Object, e As EventArgs) Handles btnChangePartnerOrder.Click
         If cbPartner.Items.Count < 2 Then Exit Sub
         Dim InterimItem As Object = cbPartner.Items(0)
@@ -291,27 +266,119 @@ Public Class HUI_TaskDocFormRegion
         cbPartner.Items.Add(InterimItem)
         CheckIfPathChangesForPartnerChange(sender, e)
     End Sub
+    Private Sub cbFileEmailOrAttachments_SelectedValueChanged(sender As Object, e As EventArgs) Handles cbFileEmailOrAttachments.SelectedValueChanged
+        If cbFileEmailOrAttachments.SelectedIndex < 2 Then Exit Sub
+        Dim SelectedAttachment As Attachment = cbFileEmailOrAttachments.SelectedItem
+        tbTitleFile.Text = SelectedAttachment.DisplayName
+    End Sub
 
+    Private Sub TabCreateTask_Enter(sender As Object, e As EventArgs) Handles TabCreateTask.Enter
+        Me.LastTabPage = Tab.CreateNewTask
+    End Sub
+    Private Sub TabFileAsDoc_Enter(sender As Object, e As EventArgs) Handles TabFileAsDoc.Enter
+        Me.LastTabPage = Tab.FileToDocLibrary
+    End Sub
+
+    Private Sub cbTaskChosenHistoryNewTask_SelectedValueChanged(sender As Object, e As EventArgs) Handles cbTaskChosenHistoryNewTask.SelectedValueChanged
+        btnHistoryChosenAsTemplateForNewTask.Enabled = True
+    End Sub
+
+    'Private Sub TabControl1_Selected(sender As Object, e As TabControlEventArgs) Handles TabControl1.Selected
+    '    If TabControl1.SelectedTab.Equals(TabFileAsDoc) Then
+    '        Me.LastTabPage = Tab.FileToDocLibrary
+    '    ElseIf TabControl1.SelectedTab.Equals(TabCreateTask) Then
+    '        Me.LastTabPage = Tab.FileToDocLibrary
+    '    End If
+    'End Sub
+#End Region
+#Region "Not used FileToTaskAsItem"
+    ''' <summary>
+    ''' Nem használt függvény FileToTaskAsItem fül alapján
+    ''' </summary>
+    ''' <param name="sender"></param>
+    ''' <param name="e"></param>
     Private Sub btnTaskChoiceAsFileTo_File_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsFileTo_File.Click
         'feladatválasztó ablakot hívja meg, a filing a meghívott ablak bezárása után nyílik meg a FileWithChosenTaskMetadata útján
         Dim TaskChooser As New SPTaxonomy_wWForms_TreeView.SPTreeview
-        AddHandler TaskChooser.ShowTaskSelected, AddressOf FileWithChosenTaskMetadata
-        TaskChooser.Show()
+        'AddHandler TaskChooser.ShowTaskSelected, AddressOf FileWithChosenTaskMetadata
+        'TaskChooser.Show()
+        TaskChooser.ShowDialog()
+        FileWithChosenTaskMetadata(TaskChooser.SelectedTaskID)
     End Sub
-    Private Shared Function OverwriteFileQuestion(targetFileName As String, Random As String) As MsgBoxResult
-        Dim result = MsgBox("The filename " & targetFileName & " already exists in the folder." & Environment.NewLine &
-                                                     "Do you want to overwrite (YES) or " & Environment.NewLine & "save the name with a new ending (NO = " & Random & ")?", MsgBoxStyle.YesNo)
-        Return result
-    End Function
-    Private Shared Function CheckUnicity(targetPath As String, targetFileName As String) As String
-        Dim ReturnName As String = targetPath & targetFileName
-        If SPHelper.SPFileFolder.TryGetFolderByServerRelativeUrl(Globals.ThisAddIn.Connection.Context, targetPath & targetFileName) Then
-            Dim random = HPHelper.StringRelated.RandomCharGet(5)
-            Dim msgResponse As MsgBoxResult = OverwriteFileQuestion(targetFileName, random)
-            If msgResponse = vbNo Then ReturnName = targetPath & Path.GetFileNameWithoutExtension(targetFileName) & random & Path.GetExtension(targetFileName)
+    ''' <summary>
+    ''' Nem használt btnExistingTaskChoiceAsFileTo_File végrehajtó része
+    ''' </summary>
+    ''' <param name="taskID"></param>
+    Private Async Sub FileWithChosenTaskMetadata(taskID As Integer)
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim SourceTask As TaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = taskID)
+        Dim InterimDoc As DocClass = GetDocClassFromSelectedTask(SourceTask, ReturnSavedFileName())
+        Dim FileLeafTarget As String = CheckUnicityFileNameInFolder(MySPHelper.Context, InterimDoc.PathtoSaveTo, InterimDoc.FileName)
+        Dim _ListItem As CSOM.ListItem = Await CreateAndFileAsFile(FileLeafTarget, InterimDoc)
+        MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, SourceTask.ID, FileLeafTarget)
+        AddToHistoryFromSelectedTaskAndClear(SourceTask)
+        'Nyissa meg egy böngészőablakban az új file-t!
+        DocClass.OpenDocToEdit(_ListItem.Id)
+    End Sub
+#End Region
+    Private Sub CheckIfPathChangesForPartnerChange(sender As Object, e As EventArgs)
+        cbMatter_SelectedIndexChanged(sender, e)
+    End Sub
+#Region "AfterSent és OnItemSend által meghívott végrehajtó részek, a formregion-ön szereplő adatok alapján"
+    ''' <summary>
+    ''' Válasz lefűzésével kapcsolatos, az AfterSent és OnItemSend által meghívott, az SP-re mentéssel kapcsolatos végrehajtó rész
+    ''' </summary>
+    ''' <param name="InterimDoc"></param>
+    ''' <param name="taskID"></param>
+    Public Shared Async Sub FileToDocLibraryAsFile(InterimDoc As DocClass, Optional taskID As Integer = 0)
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim FileLeafTarget As String = CheckUnicityFileNameInFolder(MySPHelper.Context, InterimDoc.PathtoSaveTo, InterimDoc.FilePathLocalForUploading)
+        Dim DocLibrarytoUpload = DocClass.ClientDocumentLibraryName
+        Dim _ListItem As CSOM.ListItem
+        Using fstream As New FileStream(InterimDoc.FilePathLocalForUploading, FileMode.Open)
+            _ListItem = Await SPHelper.SaveToDocLibrary.SaveAndUploadAsync(Globals.ThisAddIn.Connection.Context, fstream, FileLeafTarget, DocLibrarytoUpload)
+        End Using
+        MySPHelper.SetListItemValuestoDocumentClassValues(_ListItem, InterimDoc)
+        If taskID <> 0 Then
+            MySPHelper.SetRelatedItemForTaskSecond(MySPHelper.Context, _ListItem, taskID, FileLeafTarget)
         End If
-        Return ReturnName
+    End Sub
+    ''' <summary>
+    ''' Válasz lefűzésével kapcsolatos, az AfterSent és OnItemSend által meghívott végrehajtó rész metaadatainak összegyűjtésével kapcsolatos rész
+    ''' </summary>
+    ''' <param name="_record"></param>
+    ''' <param name="localPathName"></param>
+    ''' <returns></returns>
+    Public Shared Function FillDocClassWithRecord(_record As ThisAddIn.ControlValuesGiven, localPathName As String) As DocClass
+        Dim NewDoc As New DocClass With
+                {.FilePathLocalForUploading = localPathName, .FileName = Path.GetFileName(localPathName),
+                .TitleOrTaskName = _record.Title, .PathtoSaveTo = _record.Path, .Matter = _record.Matter, .Persons = _record.Partners}
+        If Not IsNothing(_record.Task) Then
+            With NewDoc
+                If Not IsNothing(_record.Task.Matter) Then .Matter = _record.Task.Matter
+                If Not IsNothing(_record.Task.Persons) Then .Persons = _record.Task.Persons
+                If Not IsNothing(_record.Task.TitleOrTaskName) Then .TitleOrTaskName = _record.Task.TitleOrTaskName
+                If Not IsNothing(_record.Task.ProjectSystems) Then .ProjectSystems = _record.Task.ProjectSystems
+                If Not IsNothing(_record.Task.Keywords) Then .Keywords = _record.Task.Keywords
+            End With
+        End If
+        Return NewDoc
     End Function
+#End Region
+    ''' <summary>
+    ''' btnOpenFolder_Click és btnCreateFolderIfNotExisting_Click által meghívott segédfüggvény
+    ''' </summary>
+    ''' <returns></returns>
+    Private Function ReturnUrlToOpen() As String
+        Dim GetTargetUrlFolder = "/" & DocClass.ClientDocumentLibraryFileRef & "/" & tbPathToSaveTo.Text
+        Dim TargetLibrary = DocClass.ClientDocumentLibraryName
+        Dim URLToOpen = SPHelper.SPFileFolder.FilePathValidator(My.Settings.spUrl & GetTargetUrlFolder)
+        Return URLToOpen
+    End Function
+    ''' <summary>
+    ''' A TaskDoc controlok értékei alapján lementi a megfelelő fájlt egy ideiglenes könyvtárba, és visszaadja a mentett fájl útvonalát és nevét
+    ''' </summary>
+    ''' <returns>Az ideiglenes könyvtárba lementett fájl útvonala és neve</returns>
     Private Function ReturnSavedFileName() As String
         Dim SavedFileName = String.Empty
         If IsNothing(cbFileEmailOrAttachments.SelectedItem) OrElse cbFileEmailOrAttachments.SelectedItem.ID = AttachmentIndex.FullEmail Then
@@ -325,20 +392,30 @@ Public Class HUI_TaskDocFormRegion
         Return SavedFileName
     End Function
 
-    Private Sub cbFileEmailOrAttachments_SelectedValueChanged(sender As Object, e As EventArgs) Handles cbFileEmailOrAttachments.SelectedValueChanged
-        If cbFileEmailOrAttachments.SelectedIndex < 2 Then Exit Sub
-        Dim SelectedAttachment As Attachment = cbFileEmailOrAttachments.SelectedItem
-        tbTitleFile.Text = SelectedAttachment.DisplayName
-    End Sub
+    ''' <summary>
+    ''' Egy helyi meghajtóra lementett fájlt feltölti a megadott SP útvonalra. Végrehajtó rész FileToDocLibrary és a CreateNewTask_Tab függvényekhez
+    ''' </summary>
+    ''' <param name="filePathAtSpToSaveTo">SP cél címe (fileleaf típus) </param>
+    ''' <param name="docToSave">DocClass típusú módon a feltöltendő adat (benne helyi útvonal és metaadatok is)</param>
+    ''' <returns></returns>
+    Private Async Function CreateAndFileAsFile(filePathAtSpToSaveTo As String, docToSave As DocClass) As Threading.Tasks.Task(Of CSOM.ListItem)
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim DocLibrarytoUpload = DocClass.ClientDocumentLibraryName
 
-#End Region
+        Dim _ListItem As CSOM.ListItem
+        Using fstream As New FileStream(docToSave.FilePathLocalForUploading, FileMode.Open)
+            _ListItem = Await SPHelper.SaveToDocLibrary.SaveAndUploadAsync(Globals.ThisAddIn.Connection.Context, fstream, filePathAtSpToSaveTo, DocLibrarytoUpload)
+        End Using
+        MySPHelper.SetListItemValuestoDocumentClassValues(_ListItem, docToSave)
+        Return _ListItem
+    End Function
+#Region "History comboboxokba lefűzi meglévő adatokat és törli a formregion tartalmát"
     Private Sub AddToHistoryFromFileAndClear()
         cbFileHistory.Items.Add(New HistoryItem With {.Matter = cbMatter.SelectedItem, .Partner = lbTotalPartners.Items.Cast(Of PersonClass).ToList})
         If cbFileHistory.Items.Count > 20 Then cbFileHistory.Items.RemoveAt(0)
         cbMatter.SelectedItem = Nothing
         lbTotalPartners.Items.Clear()
     End Sub
-
     Private Sub AddToHistoryFromSelectedTaskAndClear(sourceTask As TaskClass)
         cbFileHistory.Items.Add(New HistoryItem With {.Task = sourceTask})
         If cbFileHistory.Items.Count > 20 Then cbFileHistory.Items.RemoveAt(0)
@@ -347,7 +424,13 @@ Public Class HUI_TaskDocFormRegion
         cbMatter.SelectedItem = Nothing
         lbTotalPartners.Items.Clear()
     End Sub
+#End Region
 
+    ''' <summary>
+    ''' Megadott helyi meghajtós fájlnévvel kapcsolatosan rögzítse a metaadatokat a File tab-ben foglalt controlok adatai alapján
+    ''' </summary>
+    ''' <param name="fileName"></param>
+    ''' <returns></returns>
     Private Function GetDocClassFromFileTab(fileName As String) As DocClass
         Dim InterimDoc As New DocClass With {.FilePathLocalForUploading = fileName, .FileName = Path.GetFileName(fileName),
             .TitleOrTaskName = tbTitleFile.Text, .PathtoSaveTo = tbPathToSaveTo.Text}
@@ -412,10 +495,6 @@ Public Class HUI_TaskDocFormRegion
         Return InterimDoc
     End Function
 
-    Private Sub cbTaskChosenHistoryNewTask_SelectedValueChanged(sender As Object, e As EventArgs) Handles cbTaskChosenHistoryNewTask.SelectedValueChanged
-        btnHistoryChosenAsTemplateForNewTask.Enabled = True
-    End Sub
-
     Private Function GetTaxonomyFields(Optional ByRef list As CSOM.List = Nothing) As CSOM.Taxonomy.TaxonomyField
         Dim MySPHelper = Globals.ThisAddIn.Connection
         list = MySPHelper.Context.Web.Lists.GetByTitle(DocClass.ClientDocumentLibraryName)
@@ -437,36 +516,39 @@ Public Class HUI_TaskDocFormRegion
         MySPHelper.Tasks = Await m.GetAllTasksAsync(MySPHelper)
         LoadValuesInTaskChooser()
     End Sub
-    Private Sub CreateNewTask()
+    Private Function CreateNewTask() As TaskClass
         Dim MySPHelper = Globals.ThisAddIn.Connection
         Dim TaskLibrarytoUpload As CSOM.List = MySPHelper.Context.Web.Lists.GetByTitle(TaskClass.ListName)
         Dim itemCreateInfo As New CSOM.ListItemCreationInformation()
-        Dim NewTask = TaskLibrarytoUpload.AddItem(itemCreateInfo)
-        SetTaskListItemFromMail(CurrentMail, NewTask)
-        SetParentIDAndLoad(NewTask)
+        Dim NewTaskAsListItem = TaskLibrarytoUpload.AddItem(itemCreateInfo)
+        SetTaskListItemFromMail(CurrentMail, NewTaskAsListItem)
+        NewTaskAsListItem.Update()
+        MySPHelper.Context.ExecuteQuery()
         AddCategoryToMail(CurrentMail, TaskClass.TaskedToSP)
-        TaskClass.OpenTaskToEdit(NewTask.Id)
+        TaskClass.OpenTaskToEdit(NewTaskAsListItem.Id)
         UpdateTasks()
-    End Sub
-    Private Sub CreateNewTaskBasedOnOld(sample As TaskClass)
-        If IsNothing(sample) Then
+        Dim NewTaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = NewTaskAsListItem.Id)
+        Return NewTaskClass
+    End Function
+    Private Sub CreateNewTaskBasedOnOld(taskToBaseOn As TaskClass)
+        If IsNothing(taskToBaseOn) Then
             MsgBox("Nem létező task alapján kellene létrehozni")
         End If
         Dim ParentID As Integer = 0
-        If cbSubTask.Checked Then ParentID = sample.ID
+        If cbSubTask.Checked Then ParentID = taskToBaseOn.ID
         Dim MySPHelper = Globals.ThisAddIn.Connection
         Dim TaskLibrarytoUpload As CSOM.List = MySPHelper.Context.Web.Lists.GetByTitle(TaskClass.ListName)
         Dim itemCreateInfo As New CSOM.ListItemCreationInformation()
         Dim NewTask = TaskLibrarytoUpload.AddItem(itemCreateInfo)
         SetTaskListItemFromMail(CurrentMail, NewTask)
         'CurrentMail itemek adatainak felülírása Task szerinti adatokkal
-        SetTaskListItemFromOldTask(CurrentMail, NewTask, sample)
+        SetTaskListItemFromOldTask(CurrentMail, NewTask, taskToBaseOn)
         SetParentIDAndLoad(NewTask, ParentID)
         AddCategoryToMail(CurrentMail, TaskClass.TaskedToSP)
         TaskClass.OpenTaskToEdit(NewTask.Id)
         UpdateTasks()
     End Sub
-    Private Sub SetParentIDAndLoad(ByRef targetListItem As CSOM.ListItem, Optional ParentID As Integer = 0)
+    Private Sub SetParentIDAndLoad(ByRef targetListItem As CSOM.ListItem, ParentID As Integer)
         Dim MySPHelper = Globals.ThisAddIn.Connection
         If ParentID > 0 Then
             targetListItem("ParentID") = MySPHelper.GetLookupValue(ParentID)
@@ -475,20 +557,20 @@ Public Class HUI_TaskDocFormRegion
         targetListItem.Update()
         MySPHelper.Context.ExecuteQuery()
     End Sub
-    Public Sub SetTaskListItemFromOldTask(currentMail As MailItem, ByRef targetListItem As CSOM.ListItem, oldTask As TaskClass)
+    Public Sub SetTaskListItemFromOldTask(currentMail As MailItem, ByRef targetListItem As CSOM.ListItem, taskToBaseOn As TaskClass)
         Dim MySPHelper = Globals.ThisAddIn.Connection
         Dim Title As String = tbTitleFile.Text
-        If String.IsNullOrWhiteSpace(Title) Then Title = oldTask.TitleOrTaskName
-        targetListItem("ParentID") = MySPHelper.GetLookupValue(oldTask.ParentTaskID)
-        targetListItem("AssignedTo") = MySPHelper.GetLookupValue(oldTask.AssignedTo)
+        If String.IsNullOrWhiteSpace(Title) Then Title = taskToBaseOn.TitleOrTaskName
+        targetListItem("ParentID") = MySPHelper.GetLookupValue(taskToBaseOn.ParentTaskID)
+        targetListItem("AssignedTo") = MySPHelper.GetLookupValue(taskToBaseOn.AssignedTo)
         targetListItem("Title") = Title
-        targetListItem("Priority") = oldTask.Priority
-        targetListItem(TaskClass.TaskTypeColumnInternalName) = oldTask.TaskType
-        targetListItem(ProjectorSystemIDTask) = oldTask.ProjectSystems
-        targetListItem(PersonClass.InvolvedColumnInternalName) = MySPHelper.GetLookupValueArrayfromList(oldTask.Persons)
-        targetListItem(MatterClass.RefColumnInternalName) = MySPHelper.GetLookupValueArrayfromList(New List(Of MatterClass) From {oldTask.Matter})
-        targetListItem("Reviewer") = oldTask.Reviewer
-        If Not IsNothing(oldTask.Keywords) Then MySPHelper.SetTaxonomyFieldValuecollectionforListofTermClass(targetListItem, MySPHelper.Context, MySPHelper.taxFieldEKW, oldTask.Keywords)
+        targetListItem("Priority") = taskToBaseOn.Priority
+        targetListItem(TaskClass.TaskTypeColumnInternalName) = taskToBaseOn.TaskType
+        targetListItem(ProjectorSystemIDTask) = taskToBaseOn.ProjectSystems
+        targetListItem(PersonClass.InvolvedColumnInternalName) = MySPHelper.GetLookupValueArrayfromList(taskToBaseOn.Persons)
+        targetListItem(MatterClass.RefColumnInternalName) = MySPHelper.GetLookupValueArrayfromList(New List(Of MatterClass) From {taskToBaseOn.Matter})
+        targetListItem("Reviewer") = taskToBaseOn.Reviewer
+        If Not IsNothing(taskToBaseOn.Keywords) Then MySPHelper.SetTaxonomyFieldValuecollectionforListofTermClass(targetListItem, MySPHelper.Context, MySPHelper.taxFieldEKW, taskToBaseOn.Keywords)
     End Sub
     Public Sub SetTaskListItemFromMail(_MailItem As MailItem, ByRef targetListItem As CSOM.ListItem)
         Dim MySPHelper = Globals.ThisAddIn.Connection
@@ -513,43 +595,5 @@ Public Class HUI_TaskDocFormRegion
         targetListItem("EmSensitivity") = _MailItem.Sensitivity
         targetListItem("Priority") = _MailItem.Priority
     End Sub
-    Public Function GetTaskDataFromSP(taskID As Integer) As CSOM.ListItem
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim TaskLibrarytoUpload = MySPHelper.Context.Web.Lists.GetByTitle(TaskClass.ListName)
-        MySPHelper.Context.Load(TaskLibrarytoUpload)
-        Dim NewTask As CSOM.ListItem = TaskLibrarytoUpload.GetItemById(taskID)
-        MySPHelper.Context.Load(NewTask)
-        MySPHelper.Context.Load(TaskLibrarytoUpload.Fields)
-        MySPHelper.Context.Load(NewTask.AttachmentFiles)
-        MySPHelper.Context.Load(NewTask.FieldValuesAsText)
-        MySPHelper.Context.ExecuteQuery()
-        Return NewTask
-    End Function
-    Public Async Function GetTaskDataFromSPAsync(taskID As Integer) As Threading.Tasks.Task(Of CSOM.ListItem)
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim TaskLibrarytoUpload = MySPHelper.Context.Web.Lists.GetByTitle(TaskClass.ListName)
-        MySPHelper.Context.Load(TaskLibrarytoUpload)
-        Dim NewTask As CSOM.ListItem = TaskLibrarytoUpload.GetItemById(taskID)
-        MySPHelper.Context.Load(NewTask)
-        MySPHelper.Context.Load(TaskLibrarytoUpload.Fields)
-        MySPHelper.Context.Load(NewTask.AttachmentFiles)
-        MySPHelper.Context.Load(NewTask.FieldValuesAsText)
-        Await MySPHelper.Context.ExecuteQueryAsync()
-        Return NewTask
-    End Function
 
-    Private Sub TabCreateTask_Enter(sender As Object, e As EventArgs) Handles TabCreateTask.Enter
-        Me.LastTabPage = Tab.CreateNewTask
-    End Sub
-    Private Sub TabFileAsDoc_Enter(sender As Object, e As EventArgs) Handles TabFileAsDoc.Enter
-        Me.LastTabPage = Tab.FileToDocLibrary
-    End Sub
-
-    'Private Sub TabControl1_Selected(sender As Object, e As TabControlEventArgs) Handles TabControl1.Selected
-    '    If TabControl1.SelectedTab.Equals(TabFileAsDoc) Then
-    '        Me.LastTabPage = Tab.FileToDocLibrary
-    '    ElseIf TabControl1.SelectedTab.Equals(TabCreateTask) Then
-    '        Me.LastTabPage = Tab.FileToDocLibrary
-    '    End If
-    'End Sub
 End Class
