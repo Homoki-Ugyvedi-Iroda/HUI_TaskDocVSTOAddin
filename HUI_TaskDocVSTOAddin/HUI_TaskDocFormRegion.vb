@@ -24,44 +24,6 @@ Public Class HUI_TaskDocFormRegion
 
     End Class
 
-#End Region
-    Public Enum Tab
-        FileToDocLibrary = 0
-        CreateNewTask = 1
-    End Enum
-    Public Property Open As Boolean
-    Property LastTabPage As Integer
-    Property ShowAllPartners As Boolean
-    Property TaskTreeView As TreeView
-    Property CurrentMail As Outlook.MailItem
-    Enum AttachmentIndex
-        FullEmail = 254
-        EmailWithoutAttachment = 255
-    End Enum
-    Class HistoryItem
-        Property Matter As MatterClass
-        Property Partner As List(Of PersonClass)
-        Property Task As TaskClass
-    End Class
-    'Occurs before the form region is displayed. 
-    'Use Me.OutlookItem to get a reference to the current Outlook item.
-    'Use Me.OutlookFormRegion to get a reference to the form region.
-    Private Sub HUI_TaskDocFormRegion_FormRegionShowing(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionShowing
-        'Feltölti a három cb-t értékekkel, mindhárom cb értéke azonos, csak a Taskból és a body-ból veszi ki a history-t
-        Me.Open = True
-        CurrentMail = TryCast(Me.OutlookItem, MailItem)
-        If IsNothing(CurrentMail) Then Exit Sub
-        LoadValuesIntocbTaskChosen({cbTaskChosenHistoryNewTask, cbTaskChosenHistoryFileTask, cbFileHistory}, CurrentMail)
-        LoadValuesIncbMattersAllActive()
-        LoadValuesIncbPartnersAllActive()
-        LoadValuesInTaskChooser()
-        If Not OutlookApplicationHelper.IsNewAndEmpty(CurrentMail) Then
-            tbTitleFile.Text = CurrentMail.Subject
-            LoadAttachmentNames(CurrentMail)
-        End If
-    End Sub
-
-
     'Occurs when the form region is closed.   
     'Use Me.OutlookItem to get a reference to the current Outlook item.
     'Use Me.OutlookFormRegion to get a reference to the form region.
@@ -80,40 +42,44 @@ Public Class HUI_TaskDocFormRegion
             Next
         End If
     End Sub
-    Private Sub LoadValuesIncbMattersAllActive()
-        cbMatter.DisplayMember = "Value"
-        cbMatter.ValueMember = "ID"
-        cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Matters.Where(Function(x) x.Active = True).ToArray)
-        Dim SelectedMatterFromSender = GetMatterfromSenderData(CurrentMail)
-        If Not IsNothing(SelectedMatterFromSender) AndAlso SelectedMatterFromSender.Count > 0 Then
-            cbMatter.SelectedItem = SelectedMatterFromSender.First
+    'Occurs before the form region is displayed. 
+    'Use Me.OutlookItem to get a reference to the current Outlook item.
+    'Use Me.OutlookFormRegion to get a reference to the form region.
+    Private Sub HUI_TaskDocFormRegion_FormRegionShowing(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionShowing
+        'Feltölti a három cb-t értékekkel, mindhárom cb értéke azonos, csak a Taskból és a body-ból veszi ki a history-t
+        Me.Open = True
+        CurrentMail = TryCast(Me.OutlookItem, MailItem)
+        Globals.ThisAddIn.FormRegionUsed = Me
+        If IsNothing(CurrentMail) Then Exit Sub
+        LoadValuesIntocbTaskChosen({cbTaskChosenHistoryNewTask, cbTaskChosenHistoryFileTask, cbFileHistory}, CurrentMail)
+        LoadValuesIncbMattersAllActive()
+        LoadValuesIncbPartnersAllActive()
+        If Not OutlookApplicationHelper.IsNewAndEmpty(CurrentMail) Then
+            tbTitleFile.Text = CurrentMail.Subject
+            LoadAttachmentNames(CurrentMail)
         End If
     End Sub
 
-    Private Sub LoadValuesIncbPartnersAllActive()
-        cbPartner.DisplayMember = "Title"
-        cbPartner.ValueMember = "ID"
-        lbTotalPartners.DisplayMember = "Title"
-        lbTotalPartners.ValueMember = "ID"
-        cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Active = True).ToArray)
-    End Sub
-    Private Sub LoadValuesInTaskChooser()
-        Dim MySPTaxonomyTreeView As New SPTaxonomy_wWForms_TreeView.SPTreeview
-        Me.TaskTreeView = MySPTaxonomyTreeView.ShowNodeswithParents(Globals.ThisAddIn.Connection.Tasks, True)
-    End Sub
+#End Region
+    Public Enum Tab
+        FileToDocLibrary = 0
+        CreateNewTask = 1
+    End Enum
+    Property Open As Boolean
+    Property LastTabPage As Integer
+    Property ShowAllPartners As Boolean
+    Property CurrentMail As Outlook.MailItem
+    Enum AttachmentIndex
+        FullEmail = 254
+        EmailWithoutAttachment = 255
+    End Enum
+    Class HistoryItem
+        Property Matter As MatterClass
+        Property Partner As List(Of PersonClass)
+        Property Task As TaskClass
+    End Class
 
-    Private Sub LoadAttachmentNames(currentMail As MailItem)
-        Dim AttachmentNames = GetAllAttachmentDisplayNames(currentMail)
-        Dim FullEmail As New OutlookItemAttachment With
-            {.DisplayName = "The full email (including attachments)", .ID = AttachmentIndex.FullEmail}
-        Dim EmailWithoutAttachment As New OutlookItemAttachment With
-            {.DisplayName = "The email without attachments", .ID = AttachmentIndex.EmailWithoutAttachment}
-        cbFileEmailOrAttachments.DisplayMember = "DisplayName"
-        cbFileEmailOrAttachments.ValueMember = "ID"
-        cbFileEmailOrAttachments.Items.AddRange({FullEmail, EmailWithoutAttachment})
-        cbFileEmailOrAttachments.Items.AddRange(GetAllAttachments(currentMail).ToArray)
-        cbFileEmailOrAttachments.SelectedItem = FullEmail
-    End Sub
+
 
 #Region "CreateNewTask_Tab"
     ''' <summary>
@@ -142,9 +108,9 @@ Public Class HUI_TaskDocFormRegion
     ''' <param name="e"></param>
     Private Async Sub btnExistingTaskChoiceAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnExistingTaskChoiceAsTemplateForNewTask.Click
         Dim TaskChooser As New SPTaxonomy_wWForms_TreeView.SPTreeview
-        TaskChooser.CopyTreeNodes(Me.TaskTreeView, TaskChooser.TreeViewBase)
+        TaskChooser.CopyTreeNodes(Globals.ThisAddIn.TaskTreeView, TaskChooser.TreeViewBase)
         'AddHandler TaskChooser.ShowTaskSelected, AddressOf NewTaskWithChosenTaskMetadata
-        TaskChooser.ShowDialog()
+        If Not TaskChooser.ShowDialog = DialogResult.OK Then Exit Sub
         Dim MySPHelper = Globals.ThisAddIn.Connection
         Dim SourceTask As TaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = TaskChooser.SelectedTaskID)
         Dim InterimDoc As DocClass = GetDocClassFromSelectedTask(SourceTask, ReturnSavedFileName())
@@ -217,6 +183,36 @@ Public Class HUI_TaskDocFormRegion
     End Sub
 #End Region
 #Region "TaskDocFormRegion egyéb controlok és eventek kezelése"
+    Private Sub LoadValuesIncbMattersAllActive()
+        cbMatter.DisplayMember = "Value"
+        cbMatter.ValueMember = "ID"
+        cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Matters.Where(Function(x) x.Active = True).ToArray)
+        Dim SelectedMatterFromSender = GetMatterfromSenderData(CurrentMail)
+        If Not IsNothing(SelectedMatterFromSender) AndAlso SelectedMatterFromSender.Count > 0 Then
+            cbMatter.SelectedItem = SelectedMatterFromSender.First
+        End If
+    End Sub
+
+    Private Sub LoadValuesIncbPartnersAllActive()
+        cbPartner.DisplayMember = "Title"
+        cbPartner.ValueMember = "ID"
+        lbTotalPartners.DisplayMember = "Title"
+        lbTotalPartners.ValueMember = "ID"
+        cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Active = True).ToArray)
+    End Sub
+
+    Private Sub LoadAttachmentNames(currentMail As MailItem)
+        Dim AttachmentNames = GetAllAttachmentDisplayNames(currentMail)
+        Dim FullEmail As New OutlookItemAttachment With
+            {.DisplayName = "The full email (including attachments)", .ID = AttachmentIndex.FullEmail}
+        Dim EmailWithoutAttachment As New OutlookItemAttachment With
+            {.DisplayName = "The email without attachments", .ID = AttachmentIndex.EmailWithoutAttachment}
+        cbFileEmailOrAttachments.DisplayMember = "DisplayName"
+        cbFileEmailOrAttachments.ValueMember = "ID"
+        cbFileEmailOrAttachments.Items.AddRange({FullEmail, EmailWithoutAttachment})
+        cbFileEmailOrAttachments.Items.AddRange(GetAllAttachments(currentMail).ToArray)
+        cbFileEmailOrAttachments.SelectedItem = FullEmail
+    End Sub
     Private Sub btnAddPartnerFile_Click(sender As Object, e As EventArgs) Handles btnAddPartnerFile.Click
         If IsNothing(cbPartner.SelectedValue) Then Exit Sub
         lbTotalPartners.Items.Add(cbPartner.SelectedItem)
@@ -283,6 +279,9 @@ Public Class HUI_TaskDocFormRegion
         btnHistoryChosenAsTemplateForNewTask.Enabled = True
     End Sub
 
+    Private Sub CheckIfPathChangesForPartnerChange(sender As Object, e As EventArgs)
+        cbMatter_SelectedIndexChanged(sender, e)
+    End Sub
     'Private Sub TabControl1_Selected(sender As Object, e As TabControlEventArgs) Handles TabControl1.Selected
     '    If TabControl1.SelectedTab.Equals(TabFileAsDoc) Then
     '        Me.LastTabPage = Tab.FileToDocLibrary
@@ -302,7 +301,8 @@ Public Class HUI_TaskDocFormRegion
         Dim TaskChooser As New SPTaxonomy_wWForms_TreeView.SPTreeview
         'AddHandler TaskChooser.ShowTaskSelected, AddressOf FileWithChosenTaskMetadata
         'TaskChooser.Show()
-        TaskChooser.ShowDialog()
+        TaskChooser.ShowDialog(Me)
+        If Not TaskChooser.ShowDialog = DialogResult.OK Then Exit Sub
         FileWithChosenTaskMetadata(TaskChooser.SelectedTaskID)
     End Sub
     ''' <summary>
@@ -321,9 +321,7 @@ Public Class HUI_TaskDocFormRegion
         DocClass.OpenDocToEdit(_ListItem.Id)
     End Sub
 #End Region
-    Private Sub CheckIfPathChangesForPartnerChange(sender As Object, e As EventArgs)
-        cbMatter_SelectedIndexChanged(sender, e)
-    End Sub
+
 #Region "AfterSent és OnItemSend által meghívott végrehajtó részek, a formregion-ön szereplő adatok alapján"
     ''' <summary>
     ''' Válasz lefűzésével kapcsolatos, az AfterSent és OnItemSend által meghívott, az SP-re mentéssel kapcsolatos végrehajtó rész
@@ -391,7 +389,6 @@ Public Class HUI_TaskDocFormRegion
         End If
         Return SavedFileName
     End Function
-
     ''' <summary>
     ''' Egy helyi meghajtóra lementett fájlt feltölti a megadott SP útvonalra. Végrehajtó rész FileToDocLibrary és a CreateNewTask_Tab függvényekhez
     ''' </summary>
@@ -494,86 +491,44 @@ Public Class HUI_TaskDocFormRegion
         InterimDoc = GetDataFromHistoryItem(InterimDoc, cbTaskChosenHistoryNewTask)
         Return InterimDoc
     End Function
-
-    Private Function GetTaxonomyFields(Optional ByRef list As CSOM.List = Nothing) As CSOM.Taxonomy.TaxonomyField
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        list = MySPHelper.Context.Web.Lists.GetByTitle(DocClass.ClientDocumentLibraryName)
-        MySPHelper.Context.Load(list)
-        MySPHelper.Context.Load(list, Function(dl) dl.ContentTypes, Function(dl) dl.ParentWeb.Id, Function(dl) dl.Id)
-        MySPHelper.Context.Load(list.RootFolder.Files)
-        MySPHelper.Context.Load(list.Fields)
-        Dim taxFieldEKW As CSOM.Taxonomy.TaxonomyField = MySPHelper.Context.CastTo(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField)(list.Fields.GetByInternalNameOrTitle("TaxKeyword"))
-        MySPHelper.Context.Load(taxFieldEKW)
-        MySPHelper.Context.ExecuteQuery()
-        Return taxFieldEKW
-    End Function
-    ''' <summary>
-    ''' Legyártja újból a faszerkezetet friss tartalommal
-    ''' </summary>
-    Private Async Sub UpdateTasks()
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim m As New DataLayer
-        MySPHelper.Tasks = Await m.GetAllTasksAsync(MySPHelper)
-        LoadValuesInTaskChooser()
-    End Sub
+#Region "Create and set new tasks: using MailItem, CSOM and TaskClass"
     Private Function CreateNewTask() As TaskClass
         Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim TaskLibrarytoUpload As CSOM.List = MySPHelper.Context.Web.Lists.GetByTitle(TaskClass.ListName)
-        Dim itemCreateInfo As New CSOM.ListItemCreationInformation()
-        Dim NewTaskAsListItem = TaskLibrarytoUpload.AddItem(itemCreateInfo)
-        SetTaskListItemFromMail(CurrentMail, NewTaskAsListItem)
+        Dim NewTaskAsListItem = SetTaskListItemFromMail(CurrentMail, context:=MySPHelper.Context)
         NewTaskAsListItem.Update()
         MySPHelper.Context.ExecuteQuery()
         AddCategoryToMail(CurrentMail, TaskClass.TaskedToSP)
         TaskClass.OpenTaskToEdit(NewTaskAsListItem.Id)
-        UpdateTasks()
+        Globals.ThisAddIn.LoadAndUpdateTasks()
         Dim NewTaskClass = Globals.ThisAddIn.Connection.Tasks.Where(Function(x) x.ID = NewTaskAsListItem.Id)
         Return NewTaskClass
     End Function
     Private Sub CreateNewTaskBasedOnOld(taskToBaseOn As TaskClass)
         If IsNothing(taskToBaseOn) Then
             MsgBox("Nem létező task alapján kellene létrehozni")
+            Exit Sub
         End If
+
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        Dim NewTaskAsListItem = SetTaskListItemFromMail(CurrentMail, context:=MySPHelper.Context)
+        'CurrentMail itemek adatainak felülírása Task szerinti adatokkal
+        TaskClass.SetTaskListItemFromOldTask(MySPHelper, tbTitleFile.Text, NewTaskAsListItem, taskToBaseOn)
         Dim ParentID As Integer = 0
         If cbSubTask.Checked Then ParentID = taskToBaseOn.ID
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim TaskLibrarytoUpload As CSOM.List = MySPHelper.Context.Web.Lists.GetByTitle(TaskClass.ListName)
-        Dim itemCreateInfo As New CSOM.ListItemCreationInformation()
-        Dim NewTask = TaskLibrarytoUpload.AddItem(itemCreateInfo)
-        SetTaskListItemFromMail(CurrentMail, NewTask)
-        'CurrentMail itemek adatainak felülírása Task szerinti adatokkal
-        SetTaskListItemFromOldTask(CurrentMail, NewTask, taskToBaseOn)
-        SetParentIDAndLoad(NewTask, ParentID)
+        SetParentIDAndLoad(NewTaskAsListItem, ParentID)
         AddCategoryToMail(CurrentMail, TaskClass.TaskedToSP)
-        TaskClass.OpenTaskToEdit(NewTask.Id)
-        UpdateTasks()
+        TaskClass.OpenTaskToEdit(NewTaskAsListItem.Id)
+        Globals.ThisAddIn.LoadAndUpdateTasks()
     End Sub
-    Private Sub SetParentIDAndLoad(ByRef targetListItem As CSOM.ListItem, ParentID As Integer)
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        If ParentID > 0 Then
-            targetListItem("ParentID") = MySPHelper.GetLookupValue(ParentID)
+
+    Public Function SetTaskListItemFromMail(_MailItem As MailItem, Optional targetListItem As CSOM.ListItem = Nothing, Optional context As CSOM.ClientContext = Nothing) As CSOM.ListItem
+        If IsNothing(context) Then
+            context = Globals.ThisAddIn.Connection.Context
         End If
-        MySPHelper.Context.Load(targetListItem)
-        targetListItem.Update()
-        MySPHelper.Context.ExecuteQuery()
-    End Sub
-    Public Sub SetTaskListItemFromOldTask(currentMail As MailItem, ByRef targetListItem As CSOM.ListItem, taskToBaseOn As TaskClass)
-        Dim MySPHelper = Globals.ThisAddIn.Connection
-        Dim Title As String = tbTitleFile.Text
-        If String.IsNullOrWhiteSpace(Title) Then Title = taskToBaseOn.TitleOrTaskName
-        targetListItem("ParentID") = MySPHelper.GetLookupValue(taskToBaseOn.ParentTaskID)
-        targetListItem("AssignedTo") = MySPHelper.GetLookupValue(taskToBaseOn.AssignedTo)
-        targetListItem("Title") = Title
-        targetListItem("Priority") = taskToBaseOn.Priority
-        targetListItem(TaskClass.TaskTypeColumnInternalName) = taskToBaseOn.TaskType
-        targetListItem(ProjectorSystemIDTask) = taskToBaseOn.ProjectSystems
-        targetListItem(PersonClass.InvolvedColumnInternalName) = MySPHelper.GetLookupValueArrayfromList(taskToBaseOn.Persons)
-        targetListItem(MatterClass.RefColumnInternalName) = MySPHelper.GetLookupValueArrayfromList(New List(Of MatterClass) From {taskToBaseOn.Matter})
-        targetListItem("Reviewer") = taskToBaseOn.Reviewer
-        If Not IsNothing(taskToBaseOn.Keywords) Then MySPHelper.SetTaxonomyFieldValuecollectionforListofTermClass(targetListItem, MySPHelper.Context, MySPHelper.taxFieldEKW, taskToBaseOn.Keywords)
-    End Sub
-    Public Sub SetTaskListItemFromMail(_MailItem As MailItem, ByRef targetListItem As CSOM.ListItem)
-        Dim MySPHelper = Globals.ThisAddIn.Connection
+        If IsNothing(targetListItem) Then
+            targetListItem = TaskClass.NewTaskListItem(context)
+        End If
+
         targetListItem("EmConversationID") = _MailItem.ConversationID
         targetListItem("EmID") = _MailItem.EntryID
         Select Case _MailItem.BodyFormat
@@ -594,6 +549,28 @@ Public Class HUI_TaskDocFormRegion
         targetListItem("EmToAddress") = String.Join("; ", GetAllAddress(_MailItem, Microsoft.Office.Interop.Outlook.OlMailRecipientType.olTo))
         targetListItem("EmSensitivity") = _MailItem.Sensitivity
         targetListItem("Priority") = _MailItem.Priority
+        Return targetListItem
+    End Function
+    Private Sub SetParentIDAndLoad(ByRef targetListItem As CSOM.ListItem, ParentID As Integer)
+        Dim MySPHelper = Globals.ThisAddIn.Connection
+        If ParentID > 0 Then
+            targetListItem("ParentID") = MySPHelper.GetLookupValue(ParentID)
+        End If
+        MySPHelper.Context.Load(targetListItem)
+        targetListItem.Update()
+        MySPHelper.Context.ExecuteQuery()
     End Sub
-
+#End Region
+    'Private Function GetTaxonomyFields(Optional ByRef list As CSOM.List = Nothing) As CSOM.Taxonomy.TaxonomyField
+    '    Dim MySPHelper = Globals.ThisAddIn.Connection
+    '    list = MySPHelper.Context.Web.Lists.GetByTitle(DocClass.ClientDocumentLibraryName)
+    '    MySPHelper.Context.Load(list)
+    '    MySPHelper.Context.Load(list, Function(dl) dl.ContentTypes, Function(dl) dl.ParentWeb.Id, Function(dl) dl.Id)
+    '    MySPHelper.Context.Load(list.RootFolder.Files)
+    '    MySPHelper.Context.Load(list.Fields)
+    '    Dim taxFieldEKW As CSOM.Taxonomy.TaxonomyField = MySPHelper.Context.CastTo(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField)(list.Fields.GetByInternalNameOrTitle("TaxKeyword"))
+    '    MySPHelper.Context.Load(taxFieldEKW)
+    '    MySPHelper.Context.ExecuteQuery()
+    '    Return taxFieldEKW
+    'End Function
 End Class

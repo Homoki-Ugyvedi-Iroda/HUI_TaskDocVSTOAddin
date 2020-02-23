@@ -29,6 +29,8 @@ Public Class ThisAddIn
     Public CTaxFieldnames = Path.Combine(CacheDirectory, "TaxFields.json")
     Public RefreshCounter As Byte = 1
     Private LastItemFiledGuid As String
+    Public FormRegionUsed As HUI_TaskDocFormRegion
+    Property TaskTreeView As TreeView
 
     Public Class ControlValuesGiven
         Property Task As TaskClass
@@ -107,13 +109,23 @@ Public Class ThisAddIn
             Await LoadChoiceColumns(m)
         End If
         Me.Connection.Persons = Await m.GetAllPersonsAsync(Me.Connection)
-        Me.Connection.Tasks = Await m.GetAllTasksAsync(Me.Connection)
+        LoadAndUpdateTasks()
         Me.Connection.AllTerms = Await m.GetAllTermsAsync(Me.Connection)
         Me.Connection.Keywords = Await m.GetAllKeywords(Me.Connection)
         Me.Connection.taxFieldEKW = Await TermClass.GetTaxFieldEKWAsync(Connection.Context, TaskClass.ListName)
         Me.Connection.taxFieldInternalDoc = Await TermClass.GetFieldInternalDocAsync(Connection.Context)
         Globals.ThisAddIn.Log.logger.Info("RefreshSpLookupValues finished")
     End Function
+    ''' <summary>
+    ''' Legyártja újból a faszerkezetet friss tartalommal
+    ''' </summary>
+    Public Async Sub LoadAndUpdateTasks()
+        Dim m As New DataLayer
+        Me.Connection.Tasks = Await m.GetAllTasksAsync(Me.Connection)
+        'Treeview-t is frissíti
+        Dim MySPTaxonomyTreeView As New SPTaxonomy_wWForms_TreeView.SPTreeview
+        Me.TaskTreeView = MySPTaxonomyTreeView.ShowNodeswithParents(Me.Connection.Tasks, True)
+    End Sub
     Private Async Function LoadChoiceColumns(input As DataLayer) As Task
         Dim DictionaryToLoad As Dictionary(Of String, Microsoft.SharePoint.Client.FieldMultiChoice) = Await input.GetAllColumnChoiceTypesAsync(Me.Connection)
         For Each _column In DictionaryToLoad
@@ -266,16 +278,22 @@ Public Class ThisAddIn
 
         Dim MatterUsed As MatterClass = Nothing
         Dim TaskOrFileRecorded As New ControlValuesGiven
-        For Each formRegion In Globals.FormRegions
-            If TypeOf formRegion IsNot HUI_TaskDocFormRegion Then Continue For
-            Dim formRegionPresented As HUI_TaskDocFormRegion = CType(formRegion, HUI_TaskDocFormRegion)
-            If Not formRegionPresented.OutlookItem.Equals(mail) OrElse formRegionPresented.Open = False Then Continue For
-            If formRegionPresented.LastTabPage = HUI_TaskDocFormRegion.Tab.CreateNewTask Then
-                TaskOrFileRecorded = RecordCreateNewTaskAsInformation(formRegionPresented)
-            ElseIf formRegionPresented.LastTabPage = HUI_TaskDocFormRegion.Tab.FileToDocLibrary Then
-                TaskOrFileRecorded = RecordFileSaveAsInformation(formRegionPresented)
-            End If
-        Next
+        'For Each formRegion In Globals.FormRegions
+        '    If TypeOf formRegion IsNot HUI_TaskDocFormRegion Then Continue For
+        '    Dim formRegionPresented As HUI_TaskDocFormRegion = CType(formRegion, HUI_TaskDocFormRegion)
+        '    If Not formRegionPresented.OutlookItem.Equals(mail) OrElse formRegionPresented.Open = False Then Continue For
+        '    If formRegionPresented.LastTabPage = HUI_TaskDocFormRegion.Tab.CreateNewTask Then
+        '        TaskOrFileRecorded = RecordCreateNewTaskAsInformation(formRegionPresented)
+        '    ElseIf formRegionPresented.LastTabPage = HUI_TaskDocFormRegion.Tab.FileToDocLibrary Then
+        '        TaskOrFileRecorded = RecordFileSaveAsInformation(formRegionPresented)
+        '    End If
+        'Next
+        If Not Me.FormRegionUsed.OutlookItem.Equals(mail) Or Me.FormRegionUsed.Open = False Then Exit Sub
+        If Me.FormRegionUsed.LastTabPage = HUI_TaskDocFormRegion.Tab.CreateNewTask Then
+            TaskOrFileRecorded = RecordCreateNewTaskAsInformation(Me.FormRegionUsed)
+        ElseIf Me.FormRegionUsed.LastTabPage = HUI_TaskDocFormRegion.Tab.FileToDocLibrary Then
+            TaskOrFileRecorded = RecordFileSaveAsInformation(Me.FormRegionUsed)
+        End If
 
         If Not IsNothing(MatterUsed) AndAlso Not String.IsNullOrWhiteSpace(MatterUsed.ObligatoryBCCAddresses) AndAlso Not mail.Sensitivity = Microsoft.Office.Interop.Outlook.OlSensitivity.olPersonal Then
             recipients = mail.Recipients
