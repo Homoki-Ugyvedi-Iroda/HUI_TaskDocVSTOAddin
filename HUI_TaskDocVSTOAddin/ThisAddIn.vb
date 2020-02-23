@@ -156,7 +156,7 @@ Public Class ThisAddIn
         Me.Connection.Persons = DeserializePersonClass(CPersonsPath)
         Me.Connection.Tasks = DeserializeTaskClass(CTasksPath)
         Dim listTaxField As List(Of Microsoft.SharePoint.Client.Taxonomy.TaxonomyField) = DeserializeFieldNames(CTaxFieldnames)
-        If listTaxField.Count = 2 Then
+        If Not IsNothing(listTaxField) AndAlso listTaxField.Count = 2 Then
             Me.Connection.taxFieldEKW = listTaxField.First
             Me.Connection.taxFieldInternalDoc = listTaxField.Last
         End If

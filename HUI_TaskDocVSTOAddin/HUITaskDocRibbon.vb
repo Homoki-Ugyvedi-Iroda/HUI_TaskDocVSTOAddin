@@ -18,7 +18,10 @@ Public Class HUITaskDocRibbon
         Dim Results As List(Of TaskClass) = MySPHelper.Tasks.Where(Function(x) x.ConversationID = SelectedMail.ConversationID).ToList
         Results.AddRange(GetTaskClassesFromMailBody(SelectedMail))
         Dim ChosenTask As Integer
-        If Results.Count = 0 Then btnReplyFromTask_Click(sender, e)
+        If Results.Count = 0 Then
+            btnReplyFromTask_Click(sender, e)
+            Exit Sub
+        End If
         If Results.Count > 2 Then
             ChosenTask = ChooseFromLimitedTask(Results)
             If ChosenTask = 0 Then Exit Sub

@@ -47,11 +47,14 @@ Public Class HUI_TaskDocFormRegion
     'Use Me.OutlookFormRegion to get a reference to the form region.
     Private Sub HUI_TaskDocFormRegion_FormRegionShowing(ByVal sender As Object, ByVal e As System.EventArgs) Handles MyBase.FormRegionShowing
         'Feltölti a három cb-t értékekkel, mindhárom cb értéke azonos, csak a Taskból és a body-ból veszi ki a history-t
+        'TabFileAsTask.Visible = False
+        'TabFileAsTask.Enabled = False
+
         Me.Open = True
         CurrentMail = TryCast(Me.OutlookItem, MailItem)
         Globals.ThisAddIn.FormRegionUsed = Me
         If IsNothing(CurrentMail) Then Exit Sub
-        LoadValuesIntocbTaskChosen({cbTaskChosenHistoryNewTask, cbTaskChosenHistoryFileTask, cbFileHistory}, CurrentMail)
+        LoadValuesIntocbTaskChosen({cbTaskChosenHistoryNewTask, cbFileHistory}, CurrentMail)
         LoadValuesIncbMattersAllActive()
         LoadValuesIncbPartnersAllActive()
         If Not OutlookApplicationHelper.IsNewAndEmpty(CurrentMail) Then
@@ -89,7 +92,7 @@ Public Class HUI_TaskDocFormRegion
     ''' <param name="sender"></param>
     ''' <param name="e"></param>
     Private Async Sub btnHistoryChosenAsTemplateForNewTask_Click(sender As Object, e As EventArgs) Handles btnHistoryChosenAsTemplateForNewTask.Click
-        If IsNothing(cbTaskChosenHistoryNewTask.SelectedValue) Then Exit Sub
+        If IsNothing(cbTaskChosenHistoryNewTask.SelectedItem) Then Exit Sub
         Dim InterimDoc As DocClass = GetDocClassFromFileTab(ReturnSavedFileName())
         Dim FileLeafTarget As String = CheckUnicityFileNameInFolder(Globals.ThisAddIn.Connection.Context, InterimDoc.PathtoSaveTo, InterimDoc.FileName)
         Await CreateAndFileAsFile(FileLeafTarget, InterimDoc)
@@ -194,11 +197,11 @@ Public Class HUI_TaskDocFormRegion
     End Sub
 
     Private Sub LoadValuesIncbPartnersAllActive()
-        cbPartner.DisplayMember = "Title"
+        cbPartner.DisplayMember = "Value"
         cbPartner.ValueMember = "ID"
-        lbTotalPartners.DisplayMember = "Title"
+        lbTotalPartners.DisplayMember = "Value"
         lbTotalPartners.ValueMember = "ID"
-        cbMatter.Items.AddRange(Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Active = True).ToArray)
+        cbPartner.Items.AddRange(Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Active = True).ToArray)
     End Sub
 
     Private Sub LoadAttachmentNames(currentMail As MailItem)
@@ -214,13 +217,20 @@ Public Class HUI_TaskDocFormRegion
         cbFileEmailOrAttachments.SelectedItem = FullEmail
     End Sub
     Private Sub btnAddPartnerFile_Click(sender As Object, e As EventArgs) Handles btnAddPartnerFile.Click
-        If IsNothing(cbPartner.SelectedValue) Then Exit Sub
+        If IsNothing(cbPartner.SelectedItem) Then Exit Sub
         lbTotalPartners.Items.Add(cbPartner.SelectedItem)
         CheckIfPathChangesForPartnerChange(sender, e)
     End Sub
     Private Sub btnDeleteLastPartner_Click(sender As Object, e As EventArgs) Handles btnDeleteLastPartner.Click
         If lbTotalPartners.Items.Count < 1 Then Exit Sub
-        lbTotalPartners.Items.Remove(lbTotalPartners.Items.Count - 1)
+        lbTotalPartners.Items.RemoveAt(lbTotalPartners.Items.Count - 1)
+        CheckIfPathChangesForPartnerChange(sender, e)
+    End Sub
+    Private Sub btnChangePartnerOrder_Click(sender As Object, e As EventArgs) Handles btnChangePartnerOrder.Click
+        If lbTotalPartners.Items.Count < 2 Then Exit Sub
+        Dim InterimItem As Object = lbTotalPartners.Items(0)
+        lbTotalPartners.Items.RemoveAt(0)
+        lbTotalPartners.Items.Add(InterimItem)
         CheckIfPathChangesForPartnerChange(sender, e)
     End Sub
     Private Sub btnOpenFolder_Click(sender As Object, e As EventArgs) Handles btnOpenFolder.Click
@@ -241,7 +251,7 @@ Public Class HUI_TaskDocFormRegion
         Dim SelectedMatter As MatterClass = cbMatter.SelectedItem
         If IsNothing(SelectedMatter) Then Exit Sub
         PartnersToAdd = GetDefaultNonMatterPartnersfromBodyText(CurrentMail, SelectedMatter)
-        Dim DefaultPartner As PersonClass = Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Id = SelectedMatter.MatterDefaultPerson)
+        Dim DefaultPartner As PersonClass = Globals.ThisAddIn.Connection.Persons.Where(Function(x) x.Id = SelectedMatter.MatterDefaultPerson).First
         If Not IsNothing(DefaultPartner) Then
             PartnersToAdd.Add(DefaultPartner)
         End If
@@ -255,13 +265,7 @@ Public Class HUI_TaskDocFormRegion
         If String.IsNullOrWhiteSpace(NewDirectory) Then Exit Sub
         tbPathToSaveTo.Text = NewDirectory
     End Sub
-    Private Sub btnChangePartnerOrder_Click(sender As Object, e As EventArgs) Handles btnChangePartnerOrder.Click
-        If cbPartner.Items.Count < 2 Then Exit Sub
-        Dim InterimItem As Object = cbPartner.Items(0)
-        cbPartner.Items.Remove(0)
-        cbPartner.Items.Add(InterimItem)
-        CheckIfPathChangesForPartnerChange(sender, e)
-    End Sub
+
     Private Sub cbFileEmailOrAttachments_SelectedValueChanged(sender As Object, e As EventArgs) Handles cbFileEmailOrAttachments.SelectedValueChanged
         If cbFileEmailOrAttachments.SelectedIndex < 2 Then Exit Sub
         Dim SelectedAttachment As Attachment = cbFileEmailOrAttachments.SelectedItem
@@ -368,9 +372,9 @@ Public Class HUI_TaskDocFormRegion
     ''' </summary>
     ''' <returns></returns>
     Private Function ReturnUrlToOpen() As String
-        Dim GetTargetUrlFolder = "/" & DocClass.ClientDocumentLibraryFileRef & "/" & tbPathToSaveTo.Text
-        Dim TargetLibrary = DocClass.ClientDocumentLibraryName
-        Dim URLToOpen = SPHelper.SPFileFolder.FilePathValidator(My.Settings.spUrl & GetTargetUrlFolder)
+        Dim GetTargetUrlFolder = SPHelper.SPFileFolder.FilePathValidator("/" & DocClass.ClientDocumentLibraryFileRef & "/" & tbPathToSaveTo.Text)
+        'Dim TargetLibrary = DocClass.ClientDocumentLibraryName
+        Dim URLToOpen = My.Settings.spUrl & GetTargetUrlFolder
         Return URLToOpen
     End Function
     ''' <summary>
